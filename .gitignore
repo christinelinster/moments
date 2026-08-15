@@ -1,0 +1,26 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Build and TypeScript
+dist/
+*.tsbuildinfo
+
+# Tests and coverage
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# Runtime data
+var/media/
+var/tmp/
+
+# Logs and OS files
+*.log
+.DS_Store
+Thumbs.db
