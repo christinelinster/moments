@@ -16,7 +16,11 @@ describe("application foundation", () => {
     const app = createApp({
       db: db as never,
       storage: storage as never,
-      config: { clientOrigin: "http://localhost:5173" },
+      config: {
+        clientOrigin: "http://localhost:5173",
+        nodeEnv: "test",
+        sessionTtlSeconds: 3600,
+      },
     });
 
     const response = await request(app)
@@ -34,7 +38,11 @@ describe("application foundation", () => {
     const app = createApp({
       db: db as never,
       storage: {} as never,
-      config: { clientOrigin: "http://localhost:5173" },
+      config: {
+        clientOrigin: "http://localhost:5173",
+        nodeEnv: "test",
+        sessionTtlSeconds: 3600,
+      },
     });
 
     const response = await request(app)
