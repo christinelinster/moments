@@ -34,22 +34,19 @@ export async function addEditor(
   scrapbookId: string,
   normalizedEmail: string,
 ): Promise<EditorMembership> {
-  const userResult = await db.query<{ id: string }>(
-    "SELECT id FROM users WHERE email = $1",
-    [normalizedEmail],
-  );
-  const userId = userResult.rows[0]?.id ?? null;
-
   const result = await db.query<MembershipRow>(
     `
       INSERT INTO scrapbook_editors
         (scrapbook_id, email, user_id, linked_at)
-      VALUES ($1, $2, $3, CASE WHEN $3 IS NULL THEN NULL ELSE NOW() END)
+      SELECT $1, $2, users.id,
+        CASE WHEN users.id IS NULL THEN NULL ELSE NOW() END
+      FROM (VALUES (1)) AS invitation(dummy)
+      LEFT JOIN users ON users.email = $2
       ON CONFLICT (scrapbook_id, email)
       DO UPDATE SET user_id = EXCLUDED.user_id, linked_at = EXCLUDED.linked_at
       RETURNING id, scrapbook_id, email, user_id, linked_at, created_at
     `,
-    [scrapbookId, normalizedEmail, userId],
+    [scrapbookId, normalizedEmail],
   );
   const row = result.rows[0];
   if (!row) {

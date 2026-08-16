@@ -111,7 +111,6 @@ describe("scrapbook routes", () => {
         .mockResolvedValueOnce({ rows: [{ role: "editor" }] })
         .mockResolvedValueOnce({ rows: [updatedRow] })
         .mockResolvedValueOnce({ rows: [{ role: "editor" }] })
-        .mockResolvedValueOnce({ rows: [] })
         .mockResolvedValueOnce({ rows: [membershipRow] }),
     };
     const app = makeApp(db, "editor-user-1");
