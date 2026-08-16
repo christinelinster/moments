@@ -25,6 +25,8 @@ type FakeSession = {
 class FakeDatabase {
   readonly users = new Map<string, FakeUser>();
   readonly sessions = new Map<string, FakeSession>();
+  readonly pendingMembershipEmails = new Set<string>();
+  readonly linkedMemberships = new Map<string, string>();
   private nextId = 1;
   private transactionSnapshot:
     | {
@@ -136,6 +138,14 @@ class FakeDatabase {
       return { rows: [] };
     }
 
+    if (text.includes("UPDATE scrapbook_editors")) {
+      const [userId, email] = values.map(String);
+      if (this.pendingMembershipEmails.has(email)) {
+        this.linkedMemberships.set(email, userId);
+      }
+      return { rows: [] };
+    }
+
     if (text.includes("FROM sessions")) {
       const session = this.sessions.get(String(values[0]));
       if (!session || session.revokedAt || session.expiresAt <= new Date()) {
@@ -206,6 +216,23 @@ describe("authentication routes", () => {
     expect(response.headers["set-cookie"][0]).toMatch(/HttpOnly/);
     expect(response.headers["set-cookie"][0]).toMatch(/SameSite=Lax/);
     expect(response.headers["set-cookie"][0]).not.toMatch(/Secure/);
+  });
+
+  it("links pending memberships after registration and login", async () => {
+    const database = new FakeDatabase();
+    database.pendingMembershipEmails.add("person@example.com");
+    const app = createTestApp(database);
+    const credentials = {
+      email: "person@example.com",
+      password: "correct horse battery staple",
+    };
+
+    await request(app).post("/api/auth/register").send(credentials).expect(201);
+    expect(database.linkedMemberships.get(credentials.email)).toBe("user-1");
+
+    database.linkedMemberships.clear();
+    await request(app).post("/api/auth/login").send(credentials).expect(200);
+    expect(database.linkedMemberships.get(credentials.email)).toBe("user-1");
   });
 
   it("rejects duplicate normalized email addresses safely", async () => {

@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import type { AppConfig } from "../config.js";
 import { AppError } from "../errors.js";
+import { linkPendingMemberships } from "../scrapbooks/membership-repository.js";
 import { normalizeAndValidateEmail } from "./email.js";
 import {
   assertValidPassword,
@@ -118,6 +119,7 @@ export function createAuthRouter({
           throw new Error("Registration did not return a user");
         }
 
+        await linkPendingMemberships(client, row.id, email);
         const session = await createSession(
           client,
           row.id,
@@ -158,13 +160,24 @@ export function createAuthRouter({
         throw new AppError(401, "Email or password is incorrect", "INVALID_CREDENTIALS");
       }
 
-      const session = await createSession(
-        db,
-        row.id,
-        config.sessionTtlSeconds,
-      );
-      setSessionCookie(response, session.token, config);
-      response.json({ user: publicUser(row) });
+      const client = await db.connect();
+      try {
+        await client.query("BEGIN");
+        const session = await createSession(
+          client,
+          row.id,
+          config.sessionTtlSeconds,
+        );
+        await linkPendingMemberships(client, row.id, email);
+        await client.query("COMMIT");
+        setSessionCookie(response, session.token, config);
+        response.json({ user: publicUser(row) });
+      } catch (error) {
+        await client.query("ROLLBACK").catch(() => undefined);
+        throw error;
+      } finally {
+        client.release();
+      }
     } catch (error) {
       next(error);
     }
