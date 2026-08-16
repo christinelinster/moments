@@ -1,10 +1,10 @@
 import "dotenv/config";
 
-import { createApp } from "./app";
-import { loadConfig } from "./config";
-import { runMigrations } from "./db/migrate";
-import { createPool } from "./db/pool";
-import { createLocalStorage } from "./storage/local-storage";
+import { createApp } from "./app.js";
+import { loadConfig } from "./config.js";
+import { runMigrations } from "./db/migrate.js";
+import { createPool } from "./db/pool.js";
+import { createLocalStorage } from "./storage/local-storage.js";
 
 const config = loadConfig(process.env);
 const pool = createPool(config);

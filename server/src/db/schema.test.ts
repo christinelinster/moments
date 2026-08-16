@@ -1,10 +1,12 @@
+import fs from "node:fs/promises";
 import { randomUUID } from "node:crypto";
+import os from "node:os";
 import path from "node:path";
 
 import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { runMigrations } from "./migrate";
+import { runMigrations } from "./migrate.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 const describeDatabase = databaseUrl ? describe : describe.skip;
@@ -29,6 +31,38 @@ describeDatabase("database foundation", () => {
     );
 
     expect(Number(result.rows[0]?.count)).toBeGreaterThan(0);
+  });
+
+  it("serializes concurrent migration runners", async () => {
+    const migrationDirectory = await fs.mkdtemp(
+      path.join(os.tmpdir(), "photo-scrapbook-migrations-"),
+    );
+    const filename = `${randomUUID()}.sql`;
+    const tableName = `migration_probe_${randomUUID().replaceAll("-", "")}`;
+
+    await fs.writeFile(
+      path.join(migrationDirectory, filename),
+      `CREATE TABLE ${tableName} (id INTEGER); SELECT pg_sleep(0.2);`,
+    );
+
+    try {
+      const results = await Promise.allSettled([
+        runMigrations(pool, migrationDirectory),
+        runMigrations(pool, migrationDirectory),
+      ]);
+
+      expect(results.every((result) => result.status === "fulfilled")).toBe(true);
+
+      const applied = await pool.query<{ count: string }>(
+        "SELECT COUNT(*)::text AS count FROM schema_migrations WHERE filename = $1",
+        [filename],
+      );
+      expect(Number(applied.rows[0]?.count)).toBe(1);
+    } finally {
+      await pool.query(`DROP TABLE IF EXISTS ${tableName}`);
+      await pool.query("DELETE FROM schema_migrations WHERE filename = $1", [filename]);
+      await fs.rm(migrationDirectory, { recursive: true, force: true });
+    }
   });
 
   it("enforces lowercase emails and scrapbook-scoped relationships", async () => {

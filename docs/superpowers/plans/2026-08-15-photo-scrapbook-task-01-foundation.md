@@ -66,6 +66,8 @@ Run: `npm run build`
 
 Expected: PASS for client and server builds.
 
+For the database-backed schema assertions, run the suite with `DATABASE_URL` set to a PostgreSQL database. The schema test intentionally skips when no database URL is configured.
+
 - [ ] **Step 5: Refactor after green.**
 
 Confirm startup errors identify missing environment values, migrations are idempotent, and `var/media/` is ignored. Stop and show the diff for human approval before Task 2.

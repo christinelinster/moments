@@ -3,7 +3,7 @@ import { createReadStream } from "node:fs";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
 
-import type { MediaStorage, StoragePutInput, StoredObject } from "./storage";
+import type { MediaStorage, StoragePutInput, StoredObject } from "./storage.js";
 
 export function createLocalStorage(rootDirectory: string): MediaStorage {
   const root = path.resolve(rootDirectory);

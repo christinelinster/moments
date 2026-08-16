@@ -3,9 +3,9 @@ import cors from "cors";
 import helmet from "helmet";
 import type { Pool } from "pg";
 
-import type { AppConfig } from "./config";
-import { errorHandler, notFoundHandler } from "./errors";
-import type { MediaStorage } from "./storage/storage";
+import type { AppConfig } from "./config.js";
+import { errorHandler, notFoundHandler } from "./errors.js";
+import type { MediaStorage } from "./storage/storage.js";
 
 export type AppDependencies = {
   db: Pool;

@@ -5,7 +5,7 @@ import { Readable } from "node:stream";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { createLocalStorage } from "./local-storage";
+import { createLocalStorage } from "./local-storage.js";
 
 describe("local media storage", () => {
   const roots: string[] = [];

@@ -1,7 +1,7 @@
 import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
 
-import { createApp } from "../app";
+import { createApp } from "../app.js";
 
 describe("application foundation", () => {
   it("reports API and database health", async () => {
