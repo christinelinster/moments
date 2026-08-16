@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import { createReadStream, createWriteStream } from "node:fs";
+import { createReadStream } from "node:fs";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
 
@@ -25,11 +25,19 @@ export function createLocalStorage(rootDirectory: string): MediaStorage {
     async put(input: StoragePutInput): Promise<StoredObject> {
       const destination = resolveStoragePath(input.key);
       await fs.mkdir(path.dirname(destination), { recursive: true });
+      let fileHandle: Awaited<ReturnType<typeof fs.open>> | undefined;
 
       try {
-        await pipeline(input.source, createWriteStream(destination, { flags: "wx" }));
+        fileHandle = await fs.open(destination, "wx");
+        await pipeline(input.source, fileHandle.createWriteStream());
+        fileHandle = undefined;
       } catch (error) {
-        await fs.rm(destination, { force: true });
+        if (fileHandle) {
+          const createdFile = fileHandle;
+          fileHandle = undefined;
+          await createdFile.close().catch(() => undefined);
+          await fs.rm(destination, { force: true }).catch(() => undefined);
+        }
         throw error;
       }
 

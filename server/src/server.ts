@@ -14,6 +14,7 @@ await runMigrations(pool);
 const app = createApp({
   db: pool,
   storage: createLocalStorage(config.mediaRoot),
+  config,
 });
 
 const server = app.listen(config.port, () => {

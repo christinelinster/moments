@@ -5,7 +5,8 @@ CREATE TABLE IF NOT EXISTS users (
   email VARCHAR(254) NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT users_email_lowercase_check CHECK (email = lower(email))
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
@@ -41,7 +42,8 @@ CREATE TABLE IF NOT EXISTS scrapbook_editors (
   role VARCHAR(16) NOT NULL DEFAULT 'editor' CHECK (role = 'editor'),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   linked_at TIMESTAMPTZ,
-  UNIQUE (scrapbook_id, email)
+  UNIQUE (scrapbook_id, email),
+  CONSTRAINT scrapbook_editors_email_lowercase_check CHECK (email = lower(email))
 );
 
 CREATE INDEX IF NOT EXISTS scrapbook_editors_email_idx ON scrapbook_editors(email);
@@ -52,7 +54,8 @@ CREATE TABLE IF NOT EXISTS albums (
   name VARCHAR(120) NOT NULL,
   position INTEGER NOT NULL DEFAULT 0 CHECK (position >= 0),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT albums_id_scrapbook_id_key UNIQUE (id, scrapbook_id)
 );
 
 CREATE INDEX IF NOT EXISTS albums_scrapbook_position_idx ON albums(scrapbook_id, position);
@@ -60,7 +63,7 @@ CREATE INDEX IF NOT EXISTS albums_scrapbook_position_idx ON albums(scrapbook_id,
 CREATE TABLE IF NOT EXISTS media_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   scrapbook_id UUID NOT NULL REFERENCES scrapbooks(id) ON DELETE CASCADE,
-  album_id UUID REFERENCES albums(id) ON DELETE SET NULL,
+  album_id UUID,
   storage_key TEXT NOT NULL UNIQUE,
   original_name TEXT NOT NULL,
   media_type VARCHAR(16) NOT NULL CHECK (media_type IN ('photo', 'video')),
@@ -71,7 +74,11 @@ CREATE TABLE IF NOT EXISTS media_items (
   position INTEGER NOT NULL DEFAULT 0 CHECK (position >= 0),
   created_by UUID REFERENCES users(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT media_items_album_scrapbook_fkey
+    FOREIGN KEY (album_id, scrapbook_id)
+    REFERENCES albums (id, scrapbook_id)
+    ON DELETE SET NULL (album_id)
 );
 
 CREATE INDEX IF NOT EXISTS media_items_scrapbook_idx ON media_items(scrapbook_id);
@@ -85,22 +92,32 @@ CREATE TABLE IF NOT EXISTS sticker_assets (
   mime_type VARCHAR(128) NOT NULL,
   byte_size BIGINT NOT NULL CHECK (byte_size > 0),
   created_by UUID REFERENCES users(id) ON DELETE SET NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT sticker_assets_id_scrapbook_id_key UNIQUE (id, scrapbook_id)
 );
 
 CREATE INDEX IF NOT EXISTS sticker_assets_scrapbook_idx ON sticker_assets(scrapbook_id);
 
 CREATE TABLE IF NOT EXISTS sticker_placements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  album_id UUID NOT NULL REFERENCES albums(id) ON DELETE CASCADE,
-  sticker_asset_id UUID NOT NULL REFERENCES sticker_assets(id) ON DELETE CASCADE,
+  scrapbook_id UUID NOT NULL REFERENCES scrapbooks(id) ON DELETE CASCADE,
+  album_id UUID NOT NULL,
+  sticker_asset_id UUID NOT NULL,
   x NUMERIC(8, 5) NOT NULL DEFAULT 0,
   y NUMERIC(8, 5) NOT NULL DEFAULT 0,
   scale NUMERIC(8, 5) NOT NULL DEFAULT 1 CHECK (scale > 0),
   rotation NUMERIC(8, 3) NOT NULL DEFAULT 0,
   layer INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT sticker_placements_album_scrapbook_fkey
+    FOREIGN KEY (album_id, scrapbook_id)
+    REFERENCES albums (id, scrapbook_id)
+    ON DELETE CASCADE,
+  CONSTRAINT sticker_placements_asset_scrapbook_fkey
+    FOREIGN KEY (sticker_asset_id, scrapbook_id)
+    REFERENCES sticker_assets (id, scrapbook_id)
+    ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS sticker_placements_album_layer_idx ON sticker_placements(album_id, layer);
