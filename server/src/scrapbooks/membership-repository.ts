@@ -43,7 +43,9 @@ export async function addEditor(
       FROM (VALUES (1)) AS invitation(dummy)
       LEFT JOIN users ON users.email = $2
       ON CONFLICT (scrapbook_id, email)
-      DO UPDATE SET user_id = EXCLUDED.user_id, linked_at = EXCLUDED.linked_at
+      DO UPDATE SET
+        user_id = COALESCE(EXCLUDED.user_id, scrapbook_editors.user_id),
+        linked_at = COALESCE(EXCLUDED.linked_at, scrapbook_editors.linked_at)
       RETURNING id, scrapbook_id, email, user_id, linked_at, created_at
     `,
     [scrapbookId, normalizedEmail],
