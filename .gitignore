@@ -18,7 +18,8 @@ blob-report/
 
 # Runtime data
 var/media/
-var/tmp/
+server/var/media/
+/var/tmp/
 
 # Logs and OS files
 *.log
