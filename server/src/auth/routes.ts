@@ -5,13 +5,14 @@ import { AppError } from "../errors.js";
 import { normalizeAndValidateEmail } from "./email.js";
 import {
   assertValidPassword,
+  DUMMY_PASSWORD_HASH,
   hashPassword,
   verifyPassword,
 } from "./password.js";
 import {
   createSession,
   revokeSession,
-  type SessionDatabase,
+  type TransactionalDatabase,
 } from "./sessions.js";
 import {
   clearSessionCookie,
@@ -22,6 +23,7 @@ import {
 import type { AuthenticatedUser } from "./types.js";
 
 type AuthRouteConfig = Pick<AppConfig, "nodeEnv" | "sessionTtlSeconds">;
+type PasswordVerifier = typeof verifyPassword;
 
 type UserRow = {
   id: string;
@@ -76,46 +78,60 @@ function duplicateEmailError(): AppError {
 export function createAuthRouter({
   db,
   config,
+  passwordVerifier,
 }: {
-  db: SessionDatabase;
+  db: TransactionalDatabase;
   config: AuthRouteConfig;
+  passwordVerifier?: PasswordVerifier;
 }): Router {
   const router = Router();
+  const verifyLoginPassword = passwordVerifier ?? verifyPassword;
 
   router.post("/register", async (request, response, next) => {
     try {
       const { email, password } = credentials(request.body);
       const passwordHash = await hashPassword(password);
-      let result;
 
+      const client = await db.connect();
       try {
-        result = await db.query<UserRow>(
-          `
-            INSERT INTO users (email, password_hash)
-            VALUES ($1, $2)
-            RETURNING id, email, created_at
-          `,
-          [email, passwordHash],
-        );
-      } catch (error) {
-        if (isUniqueViolation(error)) {
-          throw duplicateEmailError();
+        await client.query("BEGIN");
+        let result;
+
+        try {
+          result = await client.query<UserRow>(
+            `
+              INSERT INTO users (email, password_hash)
+              VALUES ($1, $2)
+              RETURNING id, email, created_at
+            `,
+            [email, passwordHash],
+          );
+        } catch (error) {
+          if (isUniqueViolation(error)) {
+            throw duplicateEmailError();
+          }
+          throw error;
         }
+
+        const row = result.rows[0];
+        if (!row) {
+          throw new Error("Registration did not return a user");
+        }
+
+        const session = await createSession(
+          client,
+          row.id,
+          config.sessionTtlSeconds,
+        );
+        await client.query("COMMIT");
+        setSessionCookie(response, session.token, config);
+        response.status(201).json({ user: publicUser(row) });
+      } catch (error) {
+        await client.query("ROLLBACK").catch(() => undefined);
         throw error;
+      } finally {
+        client.release();
       }
-
-      const row = result.rows[0];
-      if (!row) {
-        throw new Error("Registration did not return a user");
-      }
-
-      const session = await createSession(
-        db,
-        row.id,
-        config.sessionTtlSeconds,
-      );
-      setSessionCookie(response, session.token, config);
-      response.status(201).json({ user: publicUser(row) });
     } catch (error) {
       next(error);
     }
@@ -133,9 +149,10 @@ export function createAuthRouter({
         [email],
       );
       const row = result.rows[0];
-      const passwordMatches = row
-        ? await verifyPassword(password, row.password_hash)
-        : false;
+      const passwordMatches = await verifyLoginPassword(
+        password,
+        row?.password_hash ?? DUMMY_PASSWORD_HASH,
+      );
 
       if (!row || !passwordMatches) {
         throw new AppError(401, "Email or password is incorrect", "INVALID_CREDENTIALS");

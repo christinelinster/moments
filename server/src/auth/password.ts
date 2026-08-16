@@ -15,6 +15,8 @@ const MAX_MEMORY = 32 * 1024 * 1024;
 const SALT_BYTES = 16;
 export const PASSWORD_MIN_LENGTH = 8;
 export const PASSWORD_MAX_LENGTH = 256;
+export const DUMMY_PASSWORD_HASH =
+  "scrypt$16384$8$1$cGhvdG8tc2NyYXBib29rLWR1bW15LXNhbHQ$EQXgy7qfK7uUr8hnBNKsAYD8QilSXy3_XlsQb1hlO2CVK_rQNnKyfcl-BJdfFKl35JQIed-6Jt-R4o26JEfZCg";
 
 export function assertValidPassword(input: unknown): asserts input is string {
   if (

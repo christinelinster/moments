@@ -5,6 +5,7 @@ import type { Pool } from "pg";
 import type { AuthenticatedUser } from "./types.js";
 
 export type SessionDatabase = Pick<Pool, "query">;
+export type TransactionalDatabase = SessionDatabase & Pick<Pool, "connect">;
 
 export const MAX_SESSION_TTL_SECONDS = 365 * 24 * 60 * 60;
 
