@@ -10,14 +10,17 @@ import { createAuthContext } from "./auth/middleware.js";
 import { createAuthRouter } from "./auth/routes.js";
 import { createPublicRouter } from "./public/routes.js";
 import { createScrapbookRouter } from "./scrapbooks/routes.js";
+import { createAlbumRouter } from "./albums/routes.js";
+import { createFileRouter, createMediaRouter } from "./media/routes.js";
 
 export type AppDependencies = {
   db: Pool;
   storage: MediaStorage;
-  config: Pick<AppConfig, "clientOrigin" | "nodeEnv" | "sessionTtlSeconds">;
+  config: Pick<AppConfig, "clientOrigin" | "nodeEnv" | "sessionTtlSeconds"> &
+    Partial<Pick<AppConfig, "maxMediaBytes" | "maxStickerBytes">>;
 };
 
-export function createApp({ db, config }: AppDependencies): express.Express {
+export function createApp({ db, storage, config }: AppDependencies): express.Express {
   const app = express();
 
   app.disable("x-powered-by");
@@ -53,6 +56,16 @@ export function createApp({ db, config }: AppDependencies): express.Express {
     }),
   );
   app.use("/api/scrapbooks", createScrapbookRouter({ db }));
+  app.use("/api/albums", createAlbumRouter({ db }));
+  app.use(
+    "/api/media",
+    createMediaRouter({
+      db,
+      storage,
+      config: { maxMediaBytes: config.maxMediaBytes },
+    }),
+  );
+  app.use("/api/files", createFileRouter({ db, storage }));
   app.use("/api/public", createPublicRouter({ db }));
 
   app.use(notFoundHandler);

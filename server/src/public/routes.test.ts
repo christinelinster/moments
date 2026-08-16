@@ -98,6 +98,7 @@ describe("public scrapbook routes", () => {
           mediaType: "photo",
           mimeType: "image/jpeg",
           byteSize: 100,
+          fileUrl: "/api/files/by-media/media-1?shareToken=active-token",
           caption: "The beach",
           location: "Toronto",
           position: 0,

@@ -193,6 +193,7 @@ export type PublicScrapbookSnapshot = {
     mediaType: string;
     mimeType: string;
     byteSize: number;
+    fileUrl: string;
     caption: string | null;
     location: string | null;
     position: number;
@@ -327,6 +328,7 @@ export async function getPublicSnapshot(
       mediaType: row.media_type,
       mimeType: row.mime_type,
       byteSize: numeric(row.byte_size),
+      fileUrl: `/api/files/by-media/${encodeURIComponent(row.id)}?shareToken=${encodeURIComponent(shareToken)}`,
       caption: row.caption,
       location: row.location,
       position: row.position,
