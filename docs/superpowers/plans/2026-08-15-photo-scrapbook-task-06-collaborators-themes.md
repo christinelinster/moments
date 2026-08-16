@@ -9,6 +9,13 @@
 
 **Dependencies:** Tasks 3 and 5.
 
+## References
+
+- Task spec: @docs/superpowers/subtasks/06-collaborators-sharing-and-themes.md
+- Product requirements: @docs/product-requirements.md
+- Architecture: @docs/architecture.md
+- Security: @docs/security.md
+
 ## Files
 
 - Create: `client/src/collaborators/CollaboratorPanel.tsx`, `ShareLinkPanel.tsx`, `collaborator-api.ts`.

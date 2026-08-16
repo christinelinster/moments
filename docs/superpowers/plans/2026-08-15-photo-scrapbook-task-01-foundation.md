@@ -9,6 +9,13 @@
 
 **Dependencies:** None.
 
+## References
+
+- Task spec: @docs/superpowers/subtasks/01-application-foundation.md
+- Architecture: @docs/architecture.md
+- Development: @docs/development.md
+- Security: @docs/security.md
+
 ## Files
 
 - Create: `package.json`, `tsconfig.base.json`, `.env.example`, `.gitignore` additions.

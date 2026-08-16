@@ -11,6 +11,10 @@ The owner and editors can add editors. Only the owner can remove editors. Public
 - Subtask 1: Application foundation and database.
 - Subtask 2: Authentication and sessions.
 
+## Implementation plan
+
+@docs/superpowers/plans/2026-08-15-photo-scrapbook-task-03-sharing-permissions.md
+
 ## Acceptance criteria
 
 - An authenticated user can create a scrapbook and load its current state.

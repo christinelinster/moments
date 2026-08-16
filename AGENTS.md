@@ -1,6 +1,27 @@
+## Documentation Routing
 
-## Phase 1 Agent Constraints
-- Do not use sub-agents for implementation, automated testing, local verification, planning, or pre-PR review. The only exception is the post-PR review gate defined below.
+### Project Documentation
+- Current Phase 1 task specifications live in `docs/superpowers/subtasks/`; new task specifications use `docs/specs/`.
+- Each task specification links to its matching plan in `docs/superpowers/plans/`.
+- Read only the matching plan and its `## References` section for a single-task implementation.
+- For existing plans, use the task-specific durable-document mapping before opening the broad dated design referenced by the plan. Open the full design only when the mapped documents do not answer a requirement or when cross-task review requires it.
+- Do not read the full `docs/` tree, all task specs, or the top-level implementation plan for a single-task implementation. Read them only for cross-task planning, audits, or explicit requests.
+
+### Durable documentation
+
+- `@docs/product-requirements.md` - product behavior and scope
+- `@docs/architecture.md` - architecture and component boundaries
+- `@docs/development.md` - setup, commands, and verification
+- `@docs/security.md`: Authentication, authorization, sessions, uploads, and storage security
+- `@docs/superpowers/specs/2026-08-15-photo-scrapbook-design.md` - a compatibility reference for the current Phase 1 plans. Read only the relevant sections when an active plan points to it.
+
+### Documentation updates
+
+- If a task changes documented architecture, behavior, security posture, or developer workflow, update the corresponding durable documentation.
+- New task specs must link to their implementation plan. New implementation plans must include a `## References` section that points to the task spec and only the durable documents needed for that task. Do not duplicate requirements or acceptance criteria in the plan.
+
+## Constraints
+- Do not use sub-agents.
 - Do not use git worktrees.
 - Do not commit changes.
 - Do not stage, push, or open pull requests. I will review the diff, commit, push, and open the PR manually.
@@ -13,24 +34,14 @@
 
 ## Planning and Approval Workflow
 - Treat the requirements and design phase as planning only. Do not write application implementation code until the requirements and design are complete.
-- Break the approved scope into independently verifiable subtasks, each with explicit acceptance criteria.
-- Present the subtasks and acceptance criteria to the human for review and approval before invoking the writing-plans workflow.
-- Only after the human approves the subtasks and acceptance criteria may the agent create the implementation plan with the writing-plans workflow.
-- Execute the implementation plan one task at a time. Each task requires human approval before starting the next task.
-- After each completed task, run its relevant verification, show the resulting diff, and wait for human approval before continuing.
-- In planning Markdown files, reference other repository files with concise repo-root `@path` references, such as `@docs/superpowers/specs/example.md`.
-- Keep each task's acceptance criteria in its approved `docs/superpowers/subtasks/*.md` file. Task plans must reference that file instead of duplicating the criteria.
-- If planning introduces a new acceptance criterion, add it to the referenced design spec before continuing.
+- Break the approved scope into independently verifiable tasks, each with explicit acceptance criteria in its task-spec file.
+- Present the task specs and acceptance criteria to the human for review and approval before invoking the writing-plans workflow.
+- Only after the human approves the task specs and acceptance criteria may the agent create the implementation plan with the writing-plans workflow.
+- In planning Markdown files, reference other repository files with concise repo-root `@path` references, such as `@docs/architecture.md`.
+
 
 ## Implementation, Testing, and PR Review Flow
 - The implementation agent completes one approved task at a time.
 - After implementation, run relevant automated verification before claiming the task is complete. For React user flows, prefer browser-level Playwright coverage when applicable, together with the relevant unit, API, and build checks.
 - Report the exact verification commands and results, show the relevant diff, and wait for my approval.
 - Only after I have reviewed the diff, committed the changes, and opened a PR may the agent invoke the `requesting-code-review` skill.
-- For that post-PR gate, dispatch a separate, read-only, general-purpose reviewer agent. The reviewer must be a different agent/session from the agent that implemented the changes and requested the review. When the runtime supports model selection, use a different model as well.
-- Give the reviewer the PR or exact base/head context, requirements, and verification results. The reviewer must inspect the PR without modifying the working tree, index, branch, PR, or remote, and must not commit, stage, push, or merge.
-- Do not substitute self-review if an independent reviewer agent/model is unavailable. Report the limitation and wait for direction.
-- Treat the independent review as the only permitted sub-agent use in this phase. Any fixes identified by the review return to the normal implementation, testing, diff, and human-approval flow.
-
-I want to learn the workflow, so do not optimize for
-maximum autonomy. Keep human approval gates explicit.

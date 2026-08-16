@@ -12,6 +12,10 @@ This task provides the authentication API and server authorization middleware. T
 
 - Subtask 1: Application foundation and database.
 
+## Implementation plan
+
+@docs/superpowers/plans/2026-08-15-photo-scrapbook-task-02-authentication.md
+
 ## Acceptance criteria
 
 - A user can register with a valid email address and password.

@@ -13,6 +13,10 @@ Playback must follow persisted ordering and must work for both photos and videos
 - Subtask 6: Collaborators, sharing controls, and themes.
 - Subtask 7: Custom stickers and scrapbook decorations.
 
+## Implementation plan
+
+@docs/superpowers/plans/2026-08-15-photo-scrapbook-task-08-public-playback.md
+
 ## Acceptance criteria
 
 - A visitor can open the active public share link in a fresh browser without signing in.
@@ -27,4 +31,3 @@ Playback must follow persisted ordering and must work for both photos and videos
 - Captions, locations, themes, and sticker placements appear in the current playback page.
 - Playback stops at the final item and provides Replay and Exit actions.
 - Browser verification covers public access without login, album playback, full scrapbook playback, video behavior, ordering, captions, stickers, and responsive states.
-

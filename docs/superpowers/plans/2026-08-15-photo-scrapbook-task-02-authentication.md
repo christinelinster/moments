@@ -9,6 +9,13 @@
 
 **Dependencies:** Task 1.
 
+## References
+
+- Task spec: @docs/superpowers/subtasks/02-authentication-and-sessions.md
+- Architecture: @docs/architecture.md
+- Security: @docs/security.md
+- Development: @docs/development.md
+
 ## Files
 
 - Create: `server/src/auth/email.ts`, `password.ts`, `sessions.ts`, `middleware.ts`, `routes.ts`, `types.ts`.

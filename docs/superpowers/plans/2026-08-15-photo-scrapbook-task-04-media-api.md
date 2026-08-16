@@ -9,6 +9,13 @@
 
 **Dependencies:** Tasks 1 through 3.
 
+## References
+
+- Task spec: @docs/superpowers/subtasks/04-albums-media-and-organization-api.md
+- Architecture: @docs/architecture.md
+- Security: @docs/security.md
+- Development: @docs/development.md
+
 ## Files
 
 - Create: `server/src/albums/repository.ts`, `server/src/albums/routes.ts`.

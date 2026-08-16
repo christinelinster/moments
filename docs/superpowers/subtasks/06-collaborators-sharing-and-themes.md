@@ -11,6 +11,10 @@ This task focuses on management UI and theme presentation. The underlying scrapb
 - Subtask 3: Scrapbooks, sharing, and editor permissions.
 - Subtask 5: Authenticated editor workspace.
 
+## Implementation plan
+
+@docs/superpowers/plans/2026-08-15-photo-scrapbook-task-06-collaborators-themes.md
+
 ## Acceptance criteria
 
 - The collaborator panel lists the current user’s role and editor membership state without exposing private data to public viewers.
@@ -23,4 +27,3 @@ This task focuses on management UI and theme presentation. The underlying scrapb
 - Public viewers never see collaborator-management controls.
 - Role-specific controls remain correct after a page refresh and after a session changes.
 - Browser verification covers owner controls, editor controls, attempted editor removal by an editor, share-link actions, and theme persistence.
-

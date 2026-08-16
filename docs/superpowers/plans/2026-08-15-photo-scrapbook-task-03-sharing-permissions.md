@@ -9,6 +9,13 @@
 
 **Dependencies:** Tasks 1 and 2.
 
+## References
+
+- Task spec: @docs/superpowers/subtasks/03-scrapbooks-sharing-and-permissions.md
+- Product requirements: @docs/product-requirements.md
+- Architecture: @docs/architecture.md
+- Security: @docs/security.md
+
 ## Files
 
 - Create: `server/src/scrapbooks/permissions.ts`, `repository.ts`, `membership-repository.ts`, `routes.ts`.

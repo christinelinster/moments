@@ -12,6 +12,10 @@ The workspace must make the persisted API state visible and editable without tur
 - Subtask 3: Scrapbooks, sharing, and editor permissions.
 - Subtask 4: Albums, media uploads, and organization API.
 
+## Implementation plan
+
+@docs/superpowers/plans/2026-08-15-photo-scrapbook-task-05-editor-workspace.md
+
 ## Acceptance criteria
 
 - A signed-out visitor sees register/sign-in entry points instead of the editor.
@@ -26,4 +30,3 @@ The workspace must make the persisted API state visible and editable without tur
 - The interface displays clear loading, empty, validation, permission, and upload-failure states.
 - Keyboard focus is visible and reduced-motion settings are respected.
 - A browser-level verification covers sign-in, album creation, upload, captioning, reorder, bulk action, refresh, and persisted state.
-

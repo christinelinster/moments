@@ -9,6 +9,14 @@
 
 **Dependencies:** Tasks 1 through 8.
 
+## References
+
+- Task spec: @docs/superpowers/subtasks/09-final-verification-and-handoff.md
+- Product requirements: @docs/product-requirements.md
+- Architecture: @docs/architecture.md
+- Security: @docs/security.md
+- Development: @docs/development.md
+
 ## Files
 
 - Create: `playwright.config.ts`, `e2e/auth.spec.ts`, `e2e/editor.spec.ts`, `e2e/public-viewer.spec.ts`, `e2e/media-and-playback.spec.ts`.

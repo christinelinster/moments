@@ -9,6 +9,13 @@
 
 **Dependencies:** Tasks 4, 5, and 6.
 
+## References
+
+- Task spec: @docs/superpowers/subtasks/07-custom-stickers-and-decorations.md
+- Product requirements: @docs/product-requirements.md
+- Architecture: @docs/architecture.md
+- Security: @docs/security.md
+
 ## Files
 
 - Create: `server/src/stickers/repository.ts`, `server/src/stickers/routes.ts`, `server/src/stickers/routes.test.ts`.

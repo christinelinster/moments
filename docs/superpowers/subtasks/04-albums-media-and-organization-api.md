@@ -12,6 +12,10 @@ This task must persist all state in Postgres and the configured storage adapter.
 - Subtask 2: Authentication and sessions.
 - Subtask 3: Scrapbooks, sharing, and editor permissions.
 
+## Implementation plan
+
+@docs/superpowers/plans/2026-08-15-photo-scrapbook-task-04-media-api.md
+
 ## Acceptance criteria
 
 - An owner or editor can upload supported photo and video files through a multipart API.
@@ -26,4 +30,3 @@ This task must persist all state in Postgres and the configured storage adapter.
 - Individual and bulk deletion remove media records and stored files, and failures return a retryable error instead of a false success.
 - Public file responses verify that the requested file belongs to the scrapbook identified by the active share token.
 - Automated tests cover valid uploads, rejected uploads, album behavior, ordering, caption updates, bulk actions, deletion, and unauthorized access.
-

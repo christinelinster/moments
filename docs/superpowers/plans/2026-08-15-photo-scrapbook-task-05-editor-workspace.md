@@ -9,6 +9,13 @@
 
 **Dependencies:** Tasks 2, 3, and 4.
 
+## References
+
+- Task spec: @docs/superpowers/subtasks/05-authenticated-editor-workspace.md
+- Product requirements: @docs/product-requirements.md
+- Architecture: @docs/architecture.md
+- Development: @docs/development.md
+
 ## Files
 
 - Create: `client/src/main.tsx`, `app.tsx`, `api/http.ts`.

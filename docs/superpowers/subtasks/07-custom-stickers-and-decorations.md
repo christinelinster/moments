@@ -12,6 +12,10 @@ Sticker assets are uploaded files. The server must not fetch arbitrary remote UR
 - Subtask 5: Authenticated editor workspace.
 - Subtask 6: Collaborators, sharing controls, and themes.
 
+## Implementation plan
+
+@docs/superpowers/plans/2026-08-15-photo-scrapbook-task-07-stickers.md
+
 ## Acceptance criteria
 
 - Owners and editors can upload PNG, JPEG, and WebP sticker images.
@@ -24,4 +28,3 @@ Sticker assets are uploaded files. The server must not fetch arbitrary remote UR
 - Public album views render the persisted stickers without edit controls.
 - Playback can render stickers for the current album page.
 - Automated or browser-level tests cover sticker upload, placement persistence, transformation, deletion, public rendering, and rejected uploads.
-

@@ -10,6 +10,10 @@ This task is infrastructure only. It must not implement scrapbook workflows, aut
 
 - None.
 
+## Implementation plan
+
+@docs/superpowers/plans/2026-08-15-photo-scrapbook-task-01-foundation.md
+
 ## Acceptance criteria
 
 - The repository contains separate client and server entry points with TypeScript configuration.
@@ -21,4 +25,3 @@ This task is infrastructure only. It must not implement scrapbook workflows, aut
 - The local media directory is configurable and is not committed to source control.
 - A test command and a production client build command exist and run against the foundation.
 - No application data is stored in browser local storage as a substitute for Postgres.
-

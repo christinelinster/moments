@@ -9,6 +9,13 @@
 
 **Dependencies:** Tasks 3, 4, 6, and 7.
 
+## References
+
+- Task spec: @docs/superpowers/subtasks/08-public-viewer-and-playback.md
+- Product requirements: @docs/product-requirements.md
+- Architecture: @docs/architecture.md
+- Security: @docs/security.md
+
 ## Files
 
 - Create: `client/src/public/PublicScrapbookPage.tsx`, `PublicAlbumView.tsx`, `public-api.ts`.

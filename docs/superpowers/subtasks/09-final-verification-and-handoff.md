@@ -10,6 +10,10 @@ This task is verification and documentation only. It must not introduce new prod
 
 - Subtasks 1 through 8.
 
+## Implementation plan
+
+@docs/superpowers/plans/2026-08-15-photo-scrapbook-task-09-verification.md
+
 ## Acceptance criteria
 
 - The complete automated test suite passes with zero failures.
@@ -22,4 +26,3 @@ This task is verification and documentation only. It must not introduce new prod
 - Responsive and reduced-motion checks are recorded for the editor and public viewer.
 - The final relevant diff is shown to the human without staging or committing changes.
 - The README documents environment variables, Postgres setup, migration commands, development commands, test commands, and media storage requirements.
-
