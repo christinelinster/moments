@@ -66,6 +66,7 @@ describe("media routes", () => {
       query: vi
         .fn()
         .mockResolvedValueOnce({ rows: [{ role: "editor" }] })
+        .mockResolvedValueOnce({ rows: [{ id: "album-1" }] })
         .mockResolvedValueOnce({ rows: [mediaRow] }),
     };
     const storage = {
@@ -95,6 +96,33 @@ describe("media routes", () => {
       mediaType: "photo",
     });
     expect(storage.put).toHaveBeenCalledOnce();
+  });
+
+  it("rejects an album that is not in the target scrapbook before storage", async () => {
+    const db = {
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [{ role: "editor" }] })
+        .mockResolvedValueOnce({ rows: [] }),
+    };
+    const storage = {
+      put: vi.fn(),
+      get: vi.fn(),
+      delete: vi.fn(),
+    };
+
+    const response = await request(makeApp(db, storage, "editor-1"))
+      .post("/api/media/scrapbook-1")
+      .field("albumId", "album-from-another-scrapbook")
+      .attach(
+        "file",
+        Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]),
+        { filename: "memory.jpg", contentType: "image/jpeg" },
+      );
+
+    expect(response.status).toBe(404);
+    expect(response.body.error).toBe("ALBUM_NOT_FOUND");
+    expect(storage.put).not.toHaveBeenCalled();
   });
 
   it("rejects unsupported uploads before storage or media persistence", async () => {
@@ -212,24 +240,28 @@ describe("media routes", () => {
   it("bulk-deletes media only after storage cleanup succeeds", async () => {
     const query = vi
       .fn()
-      .mockResolvedValueOnce({ rows: [{ role: "owner" }] })
-      .mockResolvedValueOnce({
-        rows: [
-          {
-            id: "media-1",
-            storageKey: "media-key-1",
-          },
-          {
-            id: "media-2",
-            storageKey: "media-key-2",
-          },
-        ],
-      });
-    const transactionQuery = vi
-      .fn()
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rowCount: 2, rows: [] })
-      .mockResolvedValueOnce({ rows: [] });
+      .mockResolvedValue({ rows: [{ role: "owner" }] });
+    const claimQuery = vi.fn().mockImplementation(async (sql: string) => {
+      if (sql.includes("FROM media_items") && sql.includes("FOR UPDATE")) {
+        return {
+          rows: [
+            { id: "media-1", storageKey: "media-key-1" },
+            { id: "media-2", storageKey: "media-key-2" },
+          ],
+        };
+      }
+      if (sql.includes("FROM media_deletion_jobs")) {
+        return { rows: [] };
+      }
+      if (sql.includes("DELETE FROM media_items")) {
+        return {
+          rowCount: 2,
+          rows: [{ id: "media-1" }, { id: "media-2" }],
+        };
+      }
+      return { rows: [] };
+    });
+    const finalizeQuery = vi.fn().mockResolvedValue({ rowCount: 2, rows: [] });
     const storage = {
       put: vi.fn(),
       get: vi.fn(),
@@ -237,10 +269,10 @@ describe("media routes", () => {
     };
     const db = {
       query,
-      connect: vi.fn().mockResolvedValue({
-        query: transactionQuery,
-        release: vi.fn(),
-      }),
+      connect: vi
+        .fn()
+        .mockResolvedValueOnce({ query: claimQuery, release: vi.fn() })
+        .mockResolvedValueOnce({ query: finalizeQuery, release: vi.fn() }),
     };
 
     const response = await request(makeApp(db, storage, "owner-1"))
@@ -254,11 +286,22 @@ describe("media routes", () => {
 
   it("returns a retryable error when stored media cleanup fails", async () => {
     const db = {
-      query: vi
-        .fn()
-        .mockResolvedValueOnce({ rows: [{ role: "owner" }] })
-        .mockResolvedValueOnce({ rows: [{ id: "media-1", storageKey: "media-key-1" }] }),
-      connect: vi.fn(),
+      query: vi.fn().mockResolvedValue({ rows: [{ role: "owner" }] }),
+      connect: vi.fn().mockResolvedValue({
+        query: vi.fn().mockImplementation(async (sql: string) => {
+          if (sql.includes("FROM media_items") && sql.includes("FOR UPDATE")) {
+            return { rows: [{ id: "media-1", storageKey: "media-key-1" }] };
+          }
+          if (sql.includes("FROM media_deletion_jobs")) {
+            return { rows: [] };
+          }
+          if (sql.includes("DELETE FROM media_items")) {
+            return { rowCount: 1, rows: [{ id: "media-1" }] };
+          }
+          return { rows: [] };
+        }),
+        release: vi.fn(),
+      }),
     };
     const storage = {
       put: vi.fn(),
@@ -271,7 +314,87 @@ describe("media routes", () => {
 
     expect(response.status).toBe(503);
     expect(response.body.error).toBe("STORAGE_CLEANUP_FAILED");
-    expect(db.connect).not.toHaveBeenCalled();
+    expect(db.connect).toHaveBeenCalledOnce();
+  });
+
+  it("keeps deletion recoverable when finalizing storage cleanup fails", async () => {
+    const events: string[] = [];
+    const target = { id: "media-1", storageKey: "media-key-1" };
+    const firstClaimQuery = vi.fn().mockImplementation(async (sql: string) => {
+      if (sql.includes("FROM media_deletion_jobs")) {
+        return { rows: [] };
+      }
+      if (sql.includes("FROM media_items") && sql.includes("FOR UPDATE")) {
+        return { rows: [target] };
+      }
+      if (sql.includes("INSERT INTO media_deletion_jobs")) {
+        return { rows: [] };
+      }
+      if (sql.includes("DELETE FROM media_items")) {
+        events.push("delete-media-row");
+        return { rowCount: 1, rows: [{ id: target.id }] };
+      }
+      return { rows: [] };
+    });
+    const firstFinalizeQuery = vi.fn().mockImplementation(async (sql: string) => {
+      if (sql.includes("DELETE FROM media_deletion_jobs")) {
+        throw new Error("database unavailable");
+      }
+      return { rows: [] };
+    });
+    const retryClaimQuery = vi.fn().mockImplementation(async (sql: string) => {
+      if (sql.includes("FROM media_items") && sql.includes("FOR UPDATE")) {
+        return { rows: [] };
+      }
+      if (sql.includes("FROM media_deletion_jobs")) {
+        return { rows: [target] };
+      }
+      return { rows: [] };
+    });
+    const retryFinalizeQuery = vi.fn().mockImplementation(async (sql: string) => {
+      if (sql.includes("DELETE FROM media_deletion_jobs")) {
+        events.push("delete-pending-job");
+        return { rowCount: 1, rows: [] };
+      }
+      return { rows: [] };
+    });
+    const makeClient = (query: ReturnType<typeof vi.fn>) => ({
+      query,
+      release: vi.fn(),
+    });
+    const db = {
+      query: vi.fn().mockResolvedValue({ rows: [{ role: "owner" }] }),
+      connect: vi
+        .fn()
+        .mockResolvedValueOnce(makeClient(firstClaimQuery))
+        .mockResolvedValueOnce(makeClient(firstFinalizeQuery))
+        .mockResolvedValueOnce(makeClient(retryClaimQuery))
+        .mockResolvedValueOnce(makeClient(retryFinalizeQuery)),
+    };
+    let storageDeleteCount = 0;
+    const storage = {
+      put: vi.fn(),
+      get: vi.fn(),
+      delete: vi.fn().mockImplementation(async () => {
+        storageDeleteCount += 1;
+        events.push(`delete-storage-${storageDeleteCount}`);
+      }),
+    };
+
+    const app = makeApp(db, storage, "owner-1");
+    const firstResponse = await request(app)
+      .delete("/api/media/scrapbook-1/media-1");
+    const retryResponse = await request(app)
+      .delete("/api/media/scrapbook-1/media-1");
+
+    expect(firstResponse.status).toBe(503);
+    expect(firstResponse.body.error).toBe("STORAGE_CLEANUP_FAILED");
+    expect(retryResponse.status).toBe(204);
+    expect(events.indexOf("delete-media-row")).toBeLessThan(
+      events.indexOf("delete-storage-1"),
+    );
+    expect(events).toContain("delete-pending-job");
+    expect(storageDeleteCount).toBe(2);
   });
 
   it("serves a file only when an active share token owns its storage key", async () => {

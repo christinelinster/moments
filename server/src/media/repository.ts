@@ -326,23 +326,80 @@ export async function bulkMoveMedia(
   });
 }
 
-export async function findMediaForDeletion(
-  db: SessionDatabase,
+export async function claimMediaForDeletion(
+  db: TransactionalDatabase,
   scrapbookId: string,
   mediaIds: string[],
 ): Promise<MediaDeletionTarget[]> {
-  const result = await db.query<MediaDeletionTarget>(
-    `
-      SELECT id, storage_key AS "storageKey"
-      FROM media_items
-      WHERE scrapbook_id = $1 AND id = ANY($2::uuid[])
-    `,
-    [scrapbookId, mediaIds],
-  );
-  return result.rows;
+  const uniqueMediaIds = [...new Set(mediaIds)];
+
+  return withTransaction(db, async (client) => {
+    const activeResult = await client.query<MediaDeletionTarget>(
+      `
+        SELECT id, storage_key AS "storageKey"
+        FROM media_items
+        WHERE scrapbook_id = $1 AND id = ANY($2::uuid[])
+        FOR UPDATE
+      `,
+      [scrapbookId, uniqueMediaIds],
+    );
+    const pendingResult = await client.query<MediaDeletionTarget>(
+      `
+        SELECT media_id AS id, storage_key AS "storageKey"
+        FROM media_deletion_jobs
+        WHERE scrapbook_id = $1 AND media_id = ANY($2::uuid[])
+        FOR UPDATE
+      `,
+      [scrapbookId, uniqueMediaIds],
+    );
+
+    const targetsById = new Map(
+      pendingResult.rows.map((target) => [target.id, target]),
+    );
+    for (const target of activeResult.rows) {
+      if (!targetsById.has(target.id)) {
+        targetsById.set(target.id, target);
+      }
+    }
+
+    if (targetsById.size !== uniqueMediaIds.length) {
+      throw new AppError(404, "One or more media items were not found", "MEDIA_NOT_FOUND");
+    }
+
+    for (const target of activeResult.rows) {
+      await client.query(
+        `
+          INSERT INTO media_deletion_jobs (scrapbook_id, media_id, storage_key)
+          VALUES ($1, $2, $3)
+          ON CONFLICT (scrapbook_id, media_id) DO NOTHING
+        `,
+        [scrapbookId, target.id, target.storageKey],
+      );
+    }
+
+    if (activeResult.rows.length > 0) {
+      const deleted = await client.query<{ id: string }>(
+        `
+          DELETE FROM media_items
+          WHERE scrapbook_id = $1 AND id = ANY($2::uuid[])
+          RETURNING id
+        `,
+        [scrapbookId, activeResult.rows.map((target) => target.id)],
+      );
+      if (deleted.rows.length !== activeResult.rows.length) {
+        throw new AppError(
+          409,
+          "Media deletion could not be claimed; retry the operation",
+          "MEDIA_DELETE_CONFLICT",
+        );
+      }
+    }
+
+    return uniqueMediaIds.map((mediaId) => targetsById.get(mediaId)!);
+  });
 }
 
-export async function deleteMediaRecords(
+export async function completeMediaDeletion(
   db: TransactionalDatabase,
   scrapbookId: string,
   mediaIds: string[],
@@ -350,10 +407,10 @@ export async function deleteMediaRecords(
   await withTransaction(db, async (client) => {
     await client.query(
       `
-        DELETE FROM media_items
-        WHERE scrapbook_id = $1 AND id = ANY($2::uuid[])
+        DELETE FROM media_deletion_jobs
+        WHERE scrapbook_id = $1 AND media_id = ANY($2::uuid[])
       `,
-      [scrapbookId, mediaIds],
+      [scrapbookId, [...new Set(mediaIds)]],
     );
   });
 }

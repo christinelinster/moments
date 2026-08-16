@@ -69,6 +69,18 @@ export async function listAlbums(
   return result.rows.map(mapAlbum);
 }
 
+export async function albumExistsInScrapbook(
+  db: SessionDatabase,
+  scrapbookId: string,
+  albumId: string,
+): Promise<boolean> {
+  const result = await db.query(
+    "SELECT 1 FROM albums WHERE scrapbook_id = $1 AND id = $2",
+    [scrapbookId, albumId],
+  );
+  return result.rows.length > 0;
+}
+
 export async function createAlbum(
   db: SessionDatabase,
   scrapbookId: string,

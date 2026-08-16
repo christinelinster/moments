@@ -17,15 +17,16 @@ import { requireScrapbookRole } from "../scrapbooks/permissions.js";
 import type { MediaStorage } from "../storage/storage.js";
 import {
   bulkMoveMedia,
+  claimMediaForDeletion,
+  completeMediaDeletion,
   createMedia,
-  deleteMediaRecords,
   findFileAccess,
   findFileAccessByMediaId,
-  findMediaForDeletion,
   listMedia,
   reorderMedia,
   updateMedia,
 } from "./repository.js";
+import { albumExistsInScrapbook } from "../albums/repository.js";
 import {
   DEFAULT_MAX_MEDIA_BYTES,
   validateUploadedFile,
@@ -225,10 +226,7 @@ async function deleteStoredMedia(
   scrapbookId: string,
   ids: string[],
 ): Promise<void> {
-  const targets = await findMediaForDeletion(db, scrapbookId, ids);
-  if (targets.length !== new Set(ids).size) {
-    throw notFound("One or more media items");
-  }
+  const targets = await claimMediaForDeletion(db, scrapbookId, ids);
 
   try {
     for (const target of targets) {
@@ -239,7 +237,11 @@ async function deleteStoredMedia(
   }
 
   try {
-    await deleteMediaRecords(db, scrapbookId, ids);
+    await completeMediaDeletion(
+      db,
+      scrapbookId,
+      targets.map((target) => target.id),
+    );
   } catch {
     throw retryableStorageError();
   }
@@ -301,6 +303,9 @@ export function createMediaRouter({
         const albumId = optionalAlbumId(oneField(parsed.fields, "albumId"));
         const caption = optionalText(oneField(parsed.fields, "caption"), "caption", 2_000);
         const location = optionalText(oneField(parsed.fields, "location"), "location", 500);
+        if (albumId && !(await albumExistsInScrapbook(db, scrapbookId, albumId))) {
+          throw new AppError(404, "Album was not found", "ALBUM_NOT_FOUND");
+        }
         const stored = await storage.put({
           key: storageKey(upload.originalName),
           source: createReadStream(upload.filepath),
