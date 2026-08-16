@@ -138,6 +138,10 @@ class FakeDatabase {
       return { rows: [] };
     }
 
+    if (text.includes("pg_advisory_xact_lock")) {
+      return { rows: [] };
+    }
+
     if (text.includes("UPDATE scrapbook_editors")) {
       const [userId, email] = values.map(String);
       if (this.pendingMembershipEmails.has(email)) {

@@ -105,13 +105,23 @@ describe("scrapbook routes", () => {
       linked_at: null,
       created_at: new Date("2026-08-15T12:00:00.000Z"),
     };
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({ rows: [{ role: "editor" }] })
+      .mockResolvedValueOnce({ rows: [updatedRow] })
+      .mockResolvedValueOnce({ rows: [{ role: "editor" }] });
+    const transactionQuery = vi
+      .fn()
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [membershipRow] })
+      .mockResolvedValueOnce({ rows: [] });
     const db = {
-      query: vi
-        .fn()
-        .mockResolvedValueOnce({ rows: [{ role: "editor" }] })
-        .mockResolvedValueOnce({ rows: [updatedRow] })
-        .mockResolvedValueOnce({ rows: [{ role: "editor" }] })
-        .mockResolvedValueOnce({ rows: [membershipRow] }),
+      query,
+      connect: vi.fn().mockResolvedValue({
+        query: transactionQuery,
+        release: vi.fn(),
+      }),
     };
     const app = makeApp(db, "editor-user-1");
 

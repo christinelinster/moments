@@ -1,4 +1,7 @@
-import type { SessionDatabase } from "../auth/sessions.js";
+import type {
+  SessionDatabase,
+  TransactionalDatabase,
+} from "../auth/sessions.js";
 
 export type EditorMembership = {
   id: string;
@@ -29,33 +32,55 @@ function mapMembership(row: MembershipRow): EditorMembership {
   };
 }
 
-export async function addEditor(
+async function lockEmail(
   db: SessionDatabase,
+  normalizedEmail: string,
+): Promise<void> {
+  await db.query(
+    "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
+    [normalizedEmail],
+  );
+}
+
+export async function addEditor(
+  db: TransactionalDatabase,
   scrapbookId: string,
   normalizedEmail: string,
 ): Promise<EditorMembership> {
-  const result = await db.query<MembershipRow>(
-    `
-      INSERT INTO scrapbook_editors
-        (scrapbook_id, email, user_id, linked_at)
-      SELECT $1, $2, users.id,
-        CASE WHEN users.id IS NULL THEN NULL ELSE NOW() END
-      FROM (VALUES (1)) AS invitation(dummy)
-      LEFT JOIN users ON users.email = $2
-      ON CONFLICT (scrapbook_id, email)
-      DO UPDATE SET
-        user_id = COALESCE(EXCLUDED.user_id, scrapbook_editors.user_id),
-        linked_at = COALESCE(EXCLUDED.linked_at, scrapbook_editors.linked_at)
-      RETURNING id, scrapbook_id, email, user_id, linked_at, created_at
-    `,
-    [scrapbookId, normalizedEmail],
-  );
-  const row = result.rows[0];
-  if (!row) {
-    throw new Error("Editor membership creation did not return a membership");
-  }
+  const client = await db.connect();
+  try {
+    await client.query("BEGIN");
+    await lockEmail(client, normalizedEmail);
 
-  return mapMembership(row);
+    const result = await client.query<MembershipRow>(
+      `
+        INSERT INTO scrapbook_editors
+          (scrapbook_id, email, user_id, linked_at)
+        SELECT $1, $2, users.id,
+          CASE WHEN users.id IS NULL THEN NULL ELSE NOW() END
+        FROM (VALUES (1)) AS invitation(dummy)
+        LEFT JOIN users ON users.email = $2
+        ON CONFLICT (scrapbook_id, email)
+        DO UPDATE SET
+          user_id = COALESCE(EXCLUDED.user_id, scrapbook_editors.user_id),
+          linked_at = COALESCE(EXCLUDED.linked_at, scrapbook_editors.linked_at)
+        RETURNING id, scrapbook_id, email, user_id, linked_at, created_at
+      `,
+      [scrapbookId, normalizedEmail],
+    );
+    const row = result.rows[0];
+    if (!row) {
+      throw new Error("Editor membership creation did not return a membership");
+    }
+
+    await client.query("COMMIT");
+    return mapMembership(row);
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => undefined);
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 export async function listEditors(
@@ -96,6 +121,7 @@ export async function linkPendingMemberships(
   userId: string,
   normalizedEmail: string,
 ): Promise<void> {
+  await lockEmail(db, normalizedEmail);
   await db.query(
     `
       UPDATE scrapbook_editors

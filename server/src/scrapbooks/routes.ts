@@ -2,7 +2,7 @@ import { Router, type Request } from "express";
 
 import { normalizeAndValidateEmail } from "../auth/email.js";
 import { requireSession } from "../auth/middleware.js";
-import type { SessionDatabase } from "../auth/sessions.js";
+import type { TransactionalDatabase } from "../auth/sessions.js";
 import { AppError } from "../errors.js";
 import {
   createScrapbook,
@@ -60,7 +60,7 @@ function routeParam(request: Request, name: string): string {
   return value;
 }
 
-export function createScrapbookRouter({ db }: { db: SessionDatabase }): Router {
+export function createScrapbookRouter({ db }: { db: TransactionalDatabase }): Router {
   const router = Router();
   router.use(requireSession(db));
 
