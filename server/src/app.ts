@@ -6,11 +6,13 @@ import type { Pool } from "pg";
 import type { AppConfig } from "./config.js";
 import { errorHandler, notFoundHandler } from "./errors.js";
 import type { MediaStorage } from "./storage/storage.js";
+import { createAuthContext } from "./auth/middleware.js";
+import { createAuthRouter } from "./auth/routes.js";
 
 export type AppDependencies = {
   db: Pool;
   storage: MediaStorage;
-  config: Pick<AppConfig, "clientOrigin">;
+  config: Pick<AppConfig, "clientOrigin" | "nodeEnv" | "sessionTtlSeconds">;
 };
 
 export function createApp({ db, config }: AppDependencies): express.Express {
@@ -30,6 +32,7 @@ export function createApp({ db, config }: AppDependencies): express.Express {
     }),
   );
   app.use(express.json({ limit: "1mb" }));
+  app.use(createAuthContext(db));
 
   app.get("/api/health", async (_request, response, next) => {
     try {
@@ -39,6 +42,14 @@ export function createApp({ db, config }: AppDependencies): express.Express {
       next(error);
     }
   });
+
+  app.use(
+    "/api/auth",
+    createAuthRouter({
+      db,
+      config,
+    }),
+  );
 
   app.use(notFoundHandler);
   app.use(errorHandler);
