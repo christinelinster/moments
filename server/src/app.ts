@@ -8,6 +8,8 @@ import { errorHandler, notFoundHandler } from "./errors.js";
 import type { MediaStorage } from "./storage/storage.js";
 import { createAuthContext } from "./auth/middleware.js";
 import { createAuthRouter } from "./auth/routes.js";
+import { createPublicRouter } from "./public/routes.js";
+import { createScrapbookRouter } from "./scrapbooks/routes.js";
 
 export type AppDependencies = {
   db: Pool;
@@ -50,6 +52,8 @@ export function createApp({ db, config }: AppDependencies): express.Express {
       config,
     }),
   );
+  app.use("/api/scrapbooks", createScrapbookRouter({ db }));
+  app.use("/api/public", createPublicRouter({ db }));
 
   app.use(notFoundHandler);
   app.use(errorHandler);
