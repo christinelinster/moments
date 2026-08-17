@@ -172,6 +172,34 @@ export async function createMedia(
   return mapMedia(row);
 }
 
+export async function createMediaUploadCleanupJob(
+  db: SessionDatabase,
+  scrapbookId: string,
+  storageKey: string,
+): Promise<void> {
+  await db.query(
+    `
+      INSERT INTO media_upload_cleanup_jobs (storage_key, scrapbook_id)
+      VALUES ($2, $1)
+      ON CONFLICT (storage_key) DO NOTHING
+    `,
+    [scrapbookId, storageKey],
+  );
+}
+
+export async function completeMediaUploadCleanupJob(
+  db: SessionDatabase,
+  storageKey: string,
+): Promise<void> {
+  await db.query(
+    `
+      DELETE FROM media_upload_cleanup_jobs
+      WHERE storage_key = $1
+    `,
+    [storageKey],
+  );
+}
+
 export async function updateMedia(
   db: SessionDatabase,
   scrapbookId: string,
@@ -265,6 +293,12 @@ export async function bulkMoveMedia(
   albumId: string | null,
 ): Promise<void> {
   await withTransaction(db, async (client) => {
+    // Serialize bulk moves within a scrapbook before acquiring media row locks.
+    await client.query(
+      "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
+      [scrapbookId],
+    );
+
     if (albumId) {
       const album = await client.query(
         "SELECT id FROM albums WHERE scrapbook_id = $1 AND id = $2",

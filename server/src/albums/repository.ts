@@ -188,6 +188,26 @@ export async function deleteAlbum(
       [scrapbookId, albumId],
     );
 
+    await client.query(
+      `
+        WITH ordered AS (
+          SELECT
+            id,
+            (ROW_NUMBER() OVER (ORDER BY position ASC, id ASC) - 1)::integer
+              AS new_position
+          FROM media_items
+          WHERE scrapbook_id = $1 AND album_id IS NULL
+        )
+        UPDATE media_items AS media
+        SET position = ordered.new_position,
+            updated_at = NOW()
+        FROM ordered
+        WHERE media.id = ordered.id
+          AND media.scrapbook_id = $1
+      `,
+      [scrapbookId],
+    );
+
     const result = await client.query(
       `
         DELETE FROM albums

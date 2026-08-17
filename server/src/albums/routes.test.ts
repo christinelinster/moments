@@ -115,6 +115,7 @@ describe("album routes", () => {
       .fn()
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rowCount: 1, rows: [] })
       .mockResolvedValueOnce({ rows: [] });
     const db = {
@@ -137,6 +138,11 @@ describe("album routes", () => {
     );
     expect(transactionQuery).toHaveBeenNthCalledWith(
       3,
+      expect.stringContaining("ROW_NUMBER"),
+      ["scrapbook-1"],
+    );
+    expect(transactionQuery).toHaveBeenNthCalledWith(
+      4,
       expect.stringContaining("DELETE FROM albums"),
       ["scrapbook-1", "album-1"],
     );

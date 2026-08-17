@@ -19,7 +19,9 @@ import {
   bulkMoveMedia,
   claimMediaForDeletion,
   completeMediaDeletion,
+  completeMediaUploadCleanupJob,
   createMedia,
+  createMediaUploadCleanupJob,
   findFileAccess,
   findFileAccessByMediaId,
   listMedia,
@@ -220,6 +222,47 @@ function retryableStorageError(): AppError {
   );
 }
 
+function retryableUploadCleanupError(): AppError {
+  return new AppError(
+    503,
+    "Uploaded media could not be cleaned up; retry the operation",
+    "UPLOAD_CLEANUP_FAILED",
+  );
+}
+
+async function cleanupFailedUpload(
+  db: TransactionalDatabase,
+  storage: MediaStorage,
+  scrapbookId: string,
+  storageKey: string,
+): Promise<void> {
+  let cleanupJobPersisted = false;
+  try {
+    await createMediaUploadCleanupJob(db, scrapbookId, storageKey);
+    cleanupJobPersisted = true;
+  } catch {
+    // Attempt direct cleanup even if the first job write fails. If both fail,
+    // the retryable response gives an operator or worker a recoverable signal.
+  }
+
+  try {
+    await storage.delete(storageKey);
+  } catch {
+    if (!cleanupJobPersisted) {
+      await createMediaUploadCleanupJob(db, scrapbookId, storageKey).catch(() => undefined);
+    }
+    throw retryableUploadCleanupError();
+  }
+
+  if (cleanupJobPersisted) {
+    try {
+      await completeMediaUploadCleanupJob(db, storageKey);
+    } catch {
+      throw retryableUploadCleanupError();
+    }
+  }
+}
+
 async function deleteStoredMedia(
   db: TransactionalDatabase,
   storage: MediaStorage,
@@ -327,7 +370,7 @@ export function createMediaRouter({
           });
           response.status(201).json({ media });
         } catch (error) {
-          await storage.delete(stored.key).catch(() => undefined);
+          await cleanupFailedUpload(db, storage, scrapbookId, stored.key);
           throw error;
         }
       } catch (error) {

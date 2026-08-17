@@ -71,6 +71,13 @@ describeDatabase("database foundation", () => {
     );
     expect(deletionJobsTable.rows[0]?.table_name).toBe("media_deletion_jobs");
 
+    const uploadCleanupJobsTable = await pool.query<{ table_name: string | null }>(
+      "SELECT to_regclass('public.media_upload_cleanup_jobs') AS table_name",
+    );
+    expect(uploadCleanupJobsTable.rows[0]?.table_name).toBe(
+      "media_upload_cleanup_jobs",
+    );
+
     const constraints = await pool.query<{ conname: string }>(`
       SELECT conname
       FROM pg_constraint

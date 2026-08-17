@@ -98,6 +98,36 @@ describe("media routes", () => {
     expect(storage.put).toHaveBeenCalledOnce();
   });
 
+  it("persists failed-upload cleanup and returns a retryable error", async () => {
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({ rows: [{ role: "editor" }] })
+      .mockRejectedValueOnce(new Error("media insert failed"))
+      .mockResolvedValue({ rows: [] });
+    const db = { query };
+    const storage = {
+      put: vi.fn().mockResolvedValue({ key: "media-orphan.jpg", byteSize: 6 }),
+      get: vi.fn(),
+      delete: vi.fn().mockRejectedValue(new Error("storage unavailable")),
+    };
+
+    const response = await request(makeApp(db, storage, "editor-1"))
+      .post("/api/media/scrapbook-1")
+      .attach(
+        "file",
+        Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]),
+        { filename: "memory.jpg", contentType: "image/jpeg" },
+      );
+
+    expect(response.status).toBe(503);
+    expect(response.body.error).toBe("UPLOAD_CLEANUP_FAILED");
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining("INSERT INTO media_upload_cleanup_jobs"),
+      ["scrapbook-1", "media-orphan.jpg"],
+    );
+    expect(storage.delete).toHaveBeenCalledWith("media-orphan.jpg");
+  });
+
   it("rejects an album that is not in the target scrapbook before storage", async () => {
     const db = {
       query: vi
@@ -234,6 +264,10 @@ describe("media routes", () => {
     expect(transactionQuery).toHaveBeenCalledWith(
       expect.stringContaining("UPDATE media_items"),
       expect.any(Array),
+    );
+    expect(transactionQuery).toHaveBeenCalledWith(
+      expect.stringContaining("pg_advisory_xact_lock"),
+      ["scrapbook-1"],
     );
   });
 
