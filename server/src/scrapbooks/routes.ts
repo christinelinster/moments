@@ -7,6 +7,8 @@ import { AppError } from "../errors.js";
 import {
   createScrapbook,
   getScrapbook,
+  getPreviewSnapshot,
+  listScrapbooks,
   getShareLink,
   rotateShareToken,
   setShareEnabled,
@@ -78,6 +80,14 @@ export function createScrapbookRouter({ db }: { db: TransactionalDatabase }): Ro
     }
   });
 
+  router.get("/", async (request, response, next) => {
+    try {
+      response.json({ scrapbooks: await listScrapbooks(db, request.auth!.userId) });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.get(
     "/:scrapbookId",
     requireScrapbookRole(db, ["owner", "editor"]),
@@ -89,7 +99,46 @@ export function createScrapbookRouter({ db }: { db: TransactionalDatabase }): Ro
           return;
         }
         const editors = await listEditors(db, scrapbook.id);
-        response.json({ scrapbook, editors });
+        response.json({ scrapbook, editors, role: request.scrapbookRole ?? null });
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.get(
+    "/:scrapbookId/preview",
+    requireScrapbookRole(db, ["owner", "editor"]),
+    async (request, response, next) => {
+      try {
+        const snapshot = await getPreviewSnapshot(db, routeParam(request, "scrapbookId"));
+        if (!snapshot) {
+          next(notFound("Scrapbook"));
+          return;
+        }
+        response.json(snapshot);
+      } catch (error) {
+        next(error);
+      }
+    },
+  );
+
+  router.patch(
+    "/:scrapbookId/theme",
+    requireScrapbookRole(db, ["owner", "editor"]),
+    async (request, response, next) => {
+      try {
+        const input = bodyRecord(request.body);
+        const scrapbook = await updateScrapbook(
+          db,
+          routeParam(request, "scrapbookId"),
+          { themeKey: themeValue(input.themeKey) },
+        );
+        if (!scrapbook) {
+          next(notFound("Scrapbook"));
+          return;
+        }
+        response.json({ scrapbook });
       } catch (error) {
         next(error);
       }

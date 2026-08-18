@@ -100,6 +100,25 @@ export async function getScrapbook(
   return row ? mapScrapbook(row) : null;
 }
 
+export async function listScrapbooks(
+  db: ScrapbookDatabase,
+  userId: string,
+): Promise<Scrapbook[]> {
+  const result = await db.query<ScrapbookRow>(
+    `
+      SELECT DISTINCT s.id, s.owner_id, s.title, s.theme_key, s.share_enabled,
+        s.created_at, s.updated_at
+      FROM scrapbooks s
+      LEFT JOIN scrapbook_editors e
+        ON e.scrapbook_id = s.id AND e.user_id = $1
+      WHERE s.owner_id = $1 OR e.user_id = $1
+      ORDER BY s.updated_at DESC, s.id ASC
+    `,
+    [userId],
+  );
+  return result.rows.map(mapScrapbook);
+}
+
 export async function updateScrapbook(
   db: ScrapbookDatabase,
   scrapbookId: string,
@@ -204,6 +223,7 @@ export type PublicScrapbookSnapshot = {
     originalName: string;
     mimeType: string;
     byteSize: number;
+    fileUrl: string;
   }>;
   stickerPlacements: Array<{
     id: string;
@@ -229,23 +249,11 @@ function numeric(value: string | number): number {
   return typeof value === "number" ? value : Number(value);
 }
 
-export async function getPublicSnapshot(
+async function loadSnapshotData(
   db: ScrapbookDatabase,
-  shareToken: string,
-): Promise<PublicScrapbookSnapshot | null> {
-  const scrapbookResult = await db.query<PublicScrapbookRow>(
-    `
-      SELECT id, title, theme_key, created_at, updated_at
-      FROM scrapbooks
-      WHERE public_share_token = $1 AND share_enabled = TRUE
-    `,
-    [shareToken],
-  );
-  const scrapbook = scrapbookResult.rows[0];
-  if (!scrapbook) {
-    return null;
-  }
-
+  scrapbook: PublicScrapbookRow,
+  fileQuery: string,
+): Promise<PublicScrapbookSnapshot> {
   const [albumsResult, mediaResult, stickerAssetsResult, placementsResult] =
     await Promise.all([
       db.query<{ id: string; name: string; position: number }>(
@@ -328,7 +336,7 @@ export async function getPublicSnapshot(
       mediaType: row.media_type,
       mimeType: row.mime_type,
       byteSize: numeric(row.byte_size),
-      fileUrl: `/api/files/by-media/${encodeURIComponent(row.id)}?shareToken=${encodeURIComponent(shareToken)}`,
+      fileUrl: `/api/files/by-media/${encodeURIComponent(row.id)}${fileQuery}`,
       caption: row.caption,
       location: row.location,
       position: row.position,
@@ -339,6 +347,7 @@ export async function getPublicSnapshot(
       originalName: row.original_name,
       mimeType: row.mime_type,
       byteSize: numeric(row.byte_size),
+      fileUrl: `/api/files/by-sticker/${encodeURIComponent(row.id)}${fileQuery}`,
     })),
     stickerPlacements: placementsResult.rows.map((row) => ({
       id: row.id,
@@ -351,4 +360,38 @@ export async function getPublicSnapshot(
       layer: row.layer,
     })),
   };
+}
+
+export async function getPublicSnapshot(
+  db: ScrapbookDatabase,
+  shareToken: string,
+): Promise<PublicScrapbookSnapshot | null> {
+  const scrapbookResult = await db.query<PublicScrapbookRow>(
+    `
+      SELECT id, title, theme_key, created_at, updated_at
+      FROM scrapbooks
+      WHERE public_share_token = $1 AND share_enabled = TRUE
+    `,
+    [shareToken],
+  );
+  const scrapbook = scrapbookResult.rows[0];
+  return scrapbook
+    ? loadSnapshotData(db, scrapbook, `?shareToken=${encodeURIComponent(shareToken)}`)
+    : null;
+}
+
+export async function getPreviewSnapshot(
+  db: ScrapbookDatabase,
+  scrapbookId: string,
+): Promise<PublicScrapbookSnapshot | null> {
+  const scrapbookResult = await db.query<PublicScrapbookRow>(
+    `
+      SELECT id, title, theme_key, created_at, updated_at
+      FROM scrapbooks
+      WHERE id = $1
+    `,
+    [scrapbookId],
+  );
+  const scrapbook = scrapbookResult.rows[0];
+  return scrapbook ? loadSnapshotData(db, scrapbook, "") : null;
 }

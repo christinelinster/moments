@@ -1,0 +1,32 @@
+.public-app { min-height: 100vh; background: var(--paper); color: var(--ink); }
+.public-header { display: flex; align-items: start; justify-content: space-between; gap: 20px; width: min(1100px, calc(100% - 34px)); margin: 0 auto; padding: 42px 0 20px; }
+.public-header h1 { margin: 0; font-size: clamp(2.2rem, 6vw, 4.6rem); line-height: .9; }
+.public-header .eyebrow { color: var(--persimmon); }
+.public-header-actions { display: flex; align-items: center; gap: 12px; }
+.public-mark { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid var(--ink); border-radius: 50%; color: var(--persimmon); }
+.public-preview-close { border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--ink); padding: 9px 13px; }
+.public-main { width: min(1100px, calc(100% - 34px)); margin: 0 auto; padding-bottom: 70px; }
+.public-cover { position: relative; overflow: hidden; border-radius: 16px; background: var(--ink); color: var(--paper); margin: 18px 0; padding: clamp(28px, 7vw, 75px); }
+.public-cover::after { position: absolute; right: -5%; bottom: -55%; width: 45%; height: 120%; border: 1px solid rgba(247,240,223,.22); border-radius: 50%; content: ""; transform: rotate(-18deg); }
+.public-kicker { color: var(--marigold); font-size: .75rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.public-cover h2 { max-width: 8em; margin: 20px 0 13px; font-size: clamp(3rem, 10vw, 8rem); line-height: .86; }
+.public-cover p:not(.public-kicker) { color: rgba(247,240,223,.72); }
+.public-play-button { border: 1px solid currentColor; border-radius: 999px; background: transparent; color: inherit; padding: 11px 16px; }
+.public-play-button:hover { background: var(--marigold); color: var(--ink); }
+.public-album-tabs { display: flex; gap: 8px; overflow-x: auto; margin: 22px 0 32px; padding: 4px 0; }
+.public-album-tabs button { display: grid; gap: 3px; min-width: max-content; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--ink-soft); padding: 10px 14px; text-align: left; }
+.public-album-tabs button.active { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+.public-album-tabs small { font-size: .68rem; opacity: .7; }
+.public-album-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--line); padding-bottom: 16px; }
+.public-album-heading h2 { margin: 0; font-size: clamp(2.2rem, 6vw, 4.2rem); }
+.public-album-heading .eyebrow { color: var(--persimmon); }
+.public-media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 18px; padding-top: 24px; }
+.public-media-card { border: 1px solid var(--line); background: var(--paper-light); box-shadow: 0 9px 18px rgba(21,40,59,.1); }
+.public-media-card img, .public-media-card video { display: block; width: 100%; aspect-ratio: 4 / 3; background: var(--paper-deep); object-fit: contain; object-position: center; }
+.public-media-card > div { display: grid; gap: 4px; padding: 11px 12px 14px; }
+.public-media-card strong { font-family: var(--serif); font-size: 1rem; font-weight: 600; }
+.public-media-card small { color: var(--ink-soft); font-size: .72rem; }
+.public-empty { grid-column: 1 / -1; color: var(--ink-soft); padding: 30px 0; }
+.public-error, .public-loading { display: grid; min-height: 100vh; place-items: center; background: var(--paper); }
+.public-sticker-preview { position: relative; min-height: 150px; margin-top: 18px; overflow: hidden; border: 1px dashed var(--line); background: rgba(120,185,194,.08); }
+.public-sticker-preview img { position: absolute; width: 90px; max-height: 90px; object-fit: contain; filter: drop-shadow(0 5px 4px rgba(21,40,59,.18)); }

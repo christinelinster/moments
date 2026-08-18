@@ -14,6 +14,7 @@ export type MediaItem = {
   mediaType: "photo" | "video";
   mimeType: string;
   byteSize: number;
+  contentHash: string | null;
   caption: string | null;
   location: string | null;
   position: number;
@@ -30,6 +31,7 @@ export type MediaCreateInput = {
   mediaType: "photo" | "video";
   mimeType: string;
   byteSize: number;
+  contentHash: string;
   caption: string | null;
   location: string | null;
   createdBy: string;
@@ -57,6 +59,7 @@ type MediaRow = {
   media_type: "photo" | "video";
   mime_type: string;
   byte_size: string | number;
+  content_hash?: string | null;
   caption: string | null;
   location: string | null;
   position: number;
@@ -79,6 +82,7 @@ function mapMedia(row: MediaRow): MediaItem {
     mediaType: row.media_type,
     mimeType: row.mime_type,
     byteSize: numeric(row.byte_size),
+    contentHash: row.content_hash ?? null,
     caption: row.caption,
     location: row.location,
     position: row.position,
@@ -109,7 +113,7 @@ async function withTransaction<T>(
 const mediaColumns = `
   id, scrapbook_id, album_id, storage_key, original_name, media_type,
   mime_type, byte_size, caption, location, position, created_by,
-  created_at, updated_at
+  content_hash, created_at, updated_at
 `;
 
 export async function listMedia(
@@ -139,17 +143,18 @@ export async function createMedia(
       INSERT INTO media_items
         (
           scrapbook_id, album_id, storage_key, original_name, media_type,
-          mime_type, byte_size, caption, location, position, created_by
+          mime_type, byte_size, content_hash, caption, location, position, created_by
         )
       VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9,
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
         COALESCE(
           (SELECT MAX(position) + 1 FROM media_items
            WHERE scrapbook_id = $1 AND album_id IS NOT DISTINCT FROM $2),
           0
         ),
-        $10
+        $11
       )
+      ON CONFLICT (scrapbook_id, content_hash) DO NOTHING
       RETURNING ${mediaColumns}
     `,
     [
@@ -160,6 +165,7 @@ export async function createMedia(
       input.mediaType,
       input.mimeType,
       input.byteSize,
+      input.contentHash,
       input.caption,
       input.location,
       input.createdBy,
@@ -167,7 +173,11 @@ export async function createMedia(
   );
   const row = result.rows[0];
   if (!row) {
-    throw new Error("Media creation did not return a media item");
+    throw new AppError(
+      409,
+      "This file already exists in the scrapbook",
+      "DUPLICATE_MEDIA",
+    );
   }
   return mapMedia(row);
 }

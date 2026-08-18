@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - Node.js and npm compatible with the checked-in workspace dependencies.
-- A running PostgreSQL instance reachable through `DATABASE_URL`.
+- A running PostgreSQL instance reachable through `DATABASE_URL`, plus a dedicated `_test` or `_e2e` database for Playwright.
 - A persistent local media directory for development uploads.
 
 ## Configuration
@@ -13,6 +13,8 @@ Use `server/.env.example` as the environment-variable template. The current serv
 - `NODE_ENV`: `development`, `test`, or `production`.
 - `PORT`: API port, defaulting to `3000`.
 - `DATABASE_URL`: PostgreSQL connection string.
+- `E2E_DATABASE_URL`: dedicated PostgreSQL connection string ending in `_test` or `_e2e`, used only by Playwright.
+- `E2E_SCHEMA`: optional isolated Playwright schema name, defaulting to `moments_e2e`.
 - `CLIENT_ORIGIN`: browser origin allowed for credentialed CORS requests.
 - `MEDIA_ROOT`: local media-storage directory.
 - `MAX_MEDIA_BYTES`: maximum photo/video upload size, defaulting to 250 MB.
@@ -26,6 +28,8 @@ Environment files and runtime media are ignored by Git. Do not commit secrets or
 Run these commands from the repository root:
 
 - `npm install`: install workspace dependencies.
+- `createdb moments`: create the development database once, if it does not exist.
+- `createdb moments_test`: create the dedicated Playwright database once, if it does not exist.
 - `npm run db:migrate`: apply server database migrations.
 - `npm run dev`: start the API and Vite client together.
 - `npm test`: run tests in each workspace that provides a test script.
@@ -34,6 +38,7 @@ Run these commands from the repository root:
 - `npm run test --workspace client`: run client tests only.
 - `npm run build --workspace server`: build the server and copy migrations.
 - `npm run build --workspace client`: type-check and build the client.
+- `E2E_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/moments_test npm run test:e2e`: run the isolated browser suite after creating the dedicated database. The command creates and drops the `moments_e2e` schema and uses a temporary media directory. It refuses to run against a database whose name does not end in `_test` or `_e2e`.
 
 ## Verification expectations
 
@@ -41,7 +46,7 @@ Run these commands from the repository root:
 - Run the full `npm test` and the relevant build command before claiming a cross-workspace task is complete.
 - API changes should include server-level tests.
 - React user flows should include browser-level verification when the browser workflow exists.
-- End-to-end Playwright commands are planned in the final verification task and must not be assumed available until that task adds them.
+- The Playwright browser suite requires `E2E_DATABASE_URL`; it creates an isolated schema and temporary media root for each run.
 
 ## References
 

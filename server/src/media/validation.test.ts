@@ -60,12 +60,74 @@ describe("media upload validation", () => {
       mimeType: "image/jpeg",
       mediaType: "photo",
       byteSize: 6,
+      contentHash: expect.any(String),
     });
     await expect(validateUploadedFile(video, "media")).resolves.toMatchObject({
       originalName: "memory.mp4",
       mimeType: "video/mp4",
       mediaType: "video",
       byteSize: 11,
+    });
+  });
+
+  it("accepts JPEG aliases and QuickTime movie signatures", async () => {
+    const jpeg = await createUpload(
+      "memory.jpeg",
+      Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]),
+      "image/jpg",
+    );
+    const movie = await createUpload(
+      "memory.mov",
+      Uint8Array.from([
+        0x00,
+        0x00,
+        0x00,
+        0x18,
+        0x66,
+        0x74,
+        0x79,
+        0x70,
+        0x71,
+        0x74,
+        0x20,
+      ]),
+      "video/quicktime",
+    );
+
+    await expect(validateUploadedFile(jpeg, "media")).resolves.toMatchObject({
+      originalName: "memory.jpeg",
+      mimeType: "image/jpeg",
+      mediaType: "photo",
+    });
+    await expect(validateUploadedFile(movie, "media")).resolves.toMatchObject({
+      originalName: "memory.mov",
+      mimeType: "video/quicktime",
+      mediaType: "video",
+    });
+  });
+
+  it("infers a supported MIME type when a browser sends a generic file type", async () => {
+    const movie = await createUpload(
+      "memory.mov",
+      Uint8Array.from([
+        0x00,
+        0x00,
+        0x00,
+        0x18,
+        0x66,
+        0x74,
+        0x79,
+        0x70,
+        0x71,
+        0x74,
+        0x20,
+      ]),
+      "application/octet-stream",
+    );
+
+    await expect(validateUploadedFile(movie, "media")).resolves.toMatchObject({
+      mimeType: "video/quicktime",
+      mediaType: "video",
     });
   });
 

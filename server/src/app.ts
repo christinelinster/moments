@@ -12,6 +12,7 @@ import { createPublicRouter } from "./public/routes.js";
 import { createScrapbookRouter } from "./scrapbooks/routes.js";
 import { createAlbumRouter } from "./albums/routes.js";
 import { createFileRouter, createMediaRouter } from "./media/routes.js";
+import { createStickerRouter } from "./stickers/routes.js";
 
 export type AppDependencies = {
   db: Pool;
@@ -63,6 +64,14 @@ export function createApp({ db, storage, config }: AppDependencies): express.Exp
       db,
       storage,
       config: { maxMediaBytes: config.maxMediaBytes },
+    }),
+  );
+  app.use(
+    "/api/stickers",
+    createStickerRouter({
+      db,
+      storage,
+      config: { maxStickerBytes: config.maxStickerBytes },
     }),
   );
   app.use("/api/files", createFileRouter({ db, storage }));

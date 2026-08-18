@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { createReadStream } from "node:fs";
 import fs from "node:fs/promises";
 
 import { AppError } from "../errors.js";
@@ -17,6 +19,7 @@ export type ValidatedUpload = {
   mimeType: string;
   mediaType: "photo" | "video" | null;
   byteSize: number;
+  contentHash: string;
 };
 
 export type UploadValidationOptions = {
@@ -25,11 +28,13 @@ export type UploadValidationOptions = {
 
 const MEDIA_MIME_TYPES = new Set([
   "image/gif",
+  "image/jpg",
   "image/jpeg",
   "image/png",
   "image/webp",
   "video/mp4",
   "video/ogg",
+  "video/quicktime",
   "video/webm",
 ]);
 
@@ -62,6 +67,7 @@ function hasValidSignature(mimeType: string, header: Buffer): boolean {
     case "image/gif":
       return header.subarray(0, 6).toString("ascii") === "GIF87a" ||
         header.subarray(0, 6).toString("ascii") === "GIF89a";
+    case "image/jpg":
     case "image/jpeg":
       return startsWithBytes(header, [0xff, 0xd8, 0xff]);
     case "image/png":
@@ -79,6 +85,7 @@ function hasValidSignature(mimeType: string, header: Buffer): boolean {
       return header.subarray(0, 4).toString("ascii") === "RIFF" &&
         header.subarray(8, 12).toString("ascii") === "WEBP";
     case "video/mp4":
+    case "video/quicktime":
       return header.subarray(4, 8).toString("ascii") === "ftyp";
     case "video/ogg":
       return header.subarray(0, 4).toString("ascii") === "OggS";
@@ -89,8 +96,34 @@ function hasValidSignature(mimeType: string, header: Buffer): boolean {
   }
 }
 
+async function hashFile(filePath: string): Promise<string> {
+  const hash = createHash("sha256");
+  for await (const chunk of createReadStream(filePath)) {
+    hash.update(chunk);
+  }
+  return hash.digest("hex");
+}
+
 function supportedMimeTypes(kind: UploadKind): Set<string> {
   return kind === "media" ? MEDIA_MIME_TYPES : STICKER_MIME_TYPES;
+}
+
+function mimeTypeFromFilename(filename: string): string | undefined {
+  const extension = filename.match(/\.([a-z0-9]{1,10})$/i)?.[1].toLowerCase();
+  return extension
+    ? {
+        gif: "image/gif",
+        jpg: "image/jpeg",
+        jpeg: "image/jpeg",
+        png: "image/png",
+        webp: "image/webp",
+        mov: "video/quicktime",
+        mp4: "video/mp4",
+        ogg: "video/ogg",
+        ogv: "video/ogg",
+        webm: "video/webm",
+      }[extension]
+    : undefined;
 }
 
 function invalidMimeError(): AppError {
@@ -106,10 +139,16 @@ export async function validateUploadedFile(
   kind: UploadKind,
   options: UploadValidationOptions = {},
 ): Promise<ValidatedUpload> {
-  const mimeType = file.mimetype?.toLowerCase().trim();
-  if (!mimeType || !supportedMimeTypes(kind).has(mimeType)) {
+  const suppliedMimeType = file.mimetype?.toLowerCase().trim();
+  const originalName = file.originalFilename?.trim() || "uploaded-file";
+  const mimeTypeCandidate = suppliedMimeType && suppliedMimeType !== "application/octet-stream"
+    ? suppliedMimeType
+    : mimeTypeFromFilename(originalName);
+  if (!mimeTypeCandidate || !supportedMimeTypes(kind).has(mimeTypeCandidate)) {
     throw invalidMimeError();
   }
+
+  const mimeType = mimeTypeCandidate === "image/jpg" ? "image/jpeg" : mimeTypeCandidate;
 
   const stats = await fs.stat(file.filepath);
   const byteSize = stats.size;
@@ -132,7 +171,6 @@ export async function validateUploadedFile(
     );
   }
 
-  const originalName = file.originalFilename?.trim() || "uploaded-file";
   const mediaType = mimeType.startsWith("image/")
     ? "photo"
     : mimeType.startsWith("video/")
@@ -145,5 +183,6 @@ export async function validateUploadedFile(
     mimeType,
     mediaType,
     byteSize,
+    contentHash: await hashFile(file.filepath),
   };
 }
