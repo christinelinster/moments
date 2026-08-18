@@ -22,7 +22,7 @@
 .public-album-heading .eyebrow { color: var(--persimmon); }
 .public-media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 18px; padding-top: 24px; }
 .public-media-card { border: 1px solid var(--line); background: var(--paper-light); box-shadow: 0 9px 18px rgba(21,40,59,.1); }
-.public-media-card img, .public-media-card video { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.public-media-card img, .public-media-card video { display: block; width: 100%; aspect-ratio: 4 / 3; background: var(--paper-deep); object-fit: contain; object-position: center; }
 .public-media-card > div { display: grid; gap: 4px; padding: 11px 12px 14px; }
 .public-media-card strong { font-family: var(--serif); font-size: 1rem; font-weight: 600; }
 .public-media-card small { color: var(--ink-soft); font-size: .72rem; }
