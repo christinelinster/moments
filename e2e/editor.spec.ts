@@ -18,12 +18,13 @@ test("editor uploads, captions, reorders, bulk-moves, and reloads persisted stat
 
   await page.getByRole("button", { name: "Move second.png earlier" }).click();
   await page.getByRole("checkbox", { name: "Select first.png" }).check();
-  await page.getByRole("checkbox", { name: "Select second.png" }).check();
+  await page.getByRole("checkbox", { name: "Select second.png" }).check({ modifiers: ["Shift"] });
   await expect(page.getByRole("toolbar", { name: "Bulk memory actions" })).toContainText("2 selected");
   await page.getByRole("combobox").selectOption("__all__");
   await expect(page.getByText("Selected memories moved", { exact: true })).not.toBeVisible();
   await page.getByRole("button", { name: "Move selected" }).click();
   await expect(page.getByText("Selected memories moved", { exact: true })).toBeVisible();
+  await expect(page.getByRole("toolbar", { name: "Bulk memory actions" })).toHaveCount(0);
 
   await page.reload();
   await expect(page.getByRole("heading", { name: "Editor acceptance" })).toBeVisible();

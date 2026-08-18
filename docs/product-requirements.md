@@ -55,6 +55,7 @@ The application does not require email delivery for editor access. An editor inv
 - Editors can upload photos and videos, edit captions and locations, reorder media, move media between albums, and delete media.
 - Media uploads support JPEG/JPG, PNG, GIF, WebP, MP4, QuickTime MOV, OGG, and WebM files. Re-uploading identical file content in the same scrapbook is rejected with a clear duplicate notice.
 - All memories includes unassigned media and supports selection, bulk move, and bulk delete.
+- Holding Shift while selecting extends the selection across the visible ordered range.
 - Bulk moves stage the destination and require an explicit Move selected confirmation before changing album membership.
 - Deleting an album leaves its media unassigned rather than deleting the media.
 
@@ -68,7 +69,7 @@ The application does not require email delivery for editor access. An editor inv
 
 ### Custom stickers and themes
 
-- Owners and editors can upload supported raster sticker images, place them on album spreads, transform them, change layer order, and delete them.
+- Owners and editors can upload supported raster sticker images, place them on album spreads, transform them, change layer order, and delete them after confirmation.
 - Sticker assets and placements persist and render in editor, public, and playback views.
 - The four theme keys are `field-journal`, `poolside`, `citrus-notebook`, and `moonlight-ink`.
 

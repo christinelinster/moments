@@ -83,9 +83,13 @@
 .sticker-tray-heading h2 { margin: 0 0 6px; font-size: 1.45rem; }
 .sticker-tray-heading .eyebrow { margin-bottom: 2px; color: var(--persimmon); }
 .sticker-list { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 2px; }
-.sticker-chip { display: grid; flex: 0 0 72px; gap: 3px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255,250,240,.7); color: var(--ink); padding: 5px; text-align: center; }
-.sticker-chip img { width: 60px; height: 48px; object-fit: contain; }
+.sticker-chip { position: relative; display: grid; flex: 0 0 82px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255,250,240,.7); color: var(--ink); padding: 5px; text-align: center; }
+.sticker-place { display: grid; gap: 3px; width: 100%; border: 0; background: transparent; color: inherit; padding: 0 2px 2px; text-align: center; }
+.sticker-place:hover { color: var(--persimmon); }
+.sticker-chip img { width: 60px; height: 48px; margin: 0 auto; object-fit: contain; }
 .sticker-chip span { overflow: hidden; font-size: .62rem; text-overflow: ellipsis; white-space: nowrap; }
+.sticker-delete { position: absolute; top: 2px; right: 2px; width: 19px; height: 19px; border: 0; border-radius: 50%; background: var(--ink); color: var(--paper); font-size: .8rem; line-height: 1; padding: 0; }
+.sticker-delete:hover { background: var(--persimmon); }
 .toast { position: fixed; right: 24px; bottom: 24px; z-index: 10; border-radius: 10px; background: var(--paper-light); box-shadow: var(--shadow); color: var(--ink); padding: 12px 16px; font-size: .84rem; }
 .toast-error { border-left: 4px solid var(--persimmon); } .toast-success { border-left: 4px solid var(--pool-deep); }
 .modal-backdrop { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(7,20,32,.66); padding: 20px; }

@@ -25,4 +25,11 @@ test("sticker upload, placement controls, and public media ordering are availabl
   await expect(publicPage.locator(".playback-sticker[alt='star.png']")).toBeVisible();
   await expect(publicPage.getByRole("button", { name: "Previous item" })).toBeVisible();
   await publicContext.close();
+
+  await page.getByRole("region", { name: "Sticker tray" }).getByRole("button", { name: "Delete sticker star.png" }).click();
+  const deleteDialog = page.getByRole("dialog", { name: "Delete sticker?" });
+  await expect(deleteDialog).toBeVisible();
+  await deleteDialog.getByRole("button", { name: "Delete sticker" }).click();
+  await expect(page.getByRole("button", { name: "Place star.png" })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Sticker decorations" }).getByRole("button", { name: "Delete sticker star.png" })).toHaveCount(0);
 });

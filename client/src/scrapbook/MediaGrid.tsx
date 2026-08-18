@@ -5,7 +5,7 @@ import { MediaCard, type MediaCardProps } from "./MediaCard";
 type Props = Omit<MediaCardProps, "media" | "selected" | "onSelect" | "onOpenDetails" | "onMove" | "onDelete"> & {
   media: MediaItem[];
   selectedIds: Set<string>;
-  onSelect: (id: string, selected: boolean) => void;
+  onSelect: (id: string, selected: boolean, shiftKey?: boolean) => void;
   onOpenDetails: (media: MediaItem) => void;
   onMove: (media: MediaItem) => void;
   onDelete: (media: MediaItem) => void;
