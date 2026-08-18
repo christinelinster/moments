@@ -8,7 +8,14 @@ test("sticker upload, placement controls, and public media ordering are availabl
   await albumButton(page, album).click();
   await page.locator(".upload-dropzone input[type=file]").setInputFiles(fixturePng("memory.png"));
   await expect(page.getByText("memory.png", { exact: true })).toBeVisible();
-  await page.locator(".sticker-tray input[type=file]").setInputFiles(fixturePng("star.png"));
+  const stickerInput = page.locator(".sticker-tray input[type=file]");
+  await stickerInput.setInputFiles({ name: "notes.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7") });
+  await expect(page.getByRole("alert")).toHaveText("This file type is not supported");
+  const oversizedSticker = Buffer.alloc(10 * 1024 * 1024 + 1);
+  oversizedSticker.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  await stickerInput.setInputFiles({ name: "large.png", mimeType: "image/png", buffer: oversizedSticker });
+  await expect(page.getByRole("alert")).toContainText("exceeds");
+  await stickerInput.setInputFiles(fixturePng("star.png"));
   await expect(page.getByRole("button", { name: "Place star.png" })).toBeVisible();
   await page.getByRole("button", { name: "Place star.png" }).click();
   await expect(page.getByRole("button", { name: "Rotate sticker star.png right" })).toBeVisible();

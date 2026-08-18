@@ -11,4 +11,3 @@ export default async function globalTeardown() {
   }
   await fs.rm(e2eMediaRoot, { recursive: true, force: true });
 }
-

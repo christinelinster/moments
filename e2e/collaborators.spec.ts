@@ -29,5 +29,23 @@ test("owner controls, editor role restrictions, public link, and theme persisten
   await expect(page.getByText("You are the editor")).toBeVisible();
   await expect(page.getByRole("button", { name: /Remove / })).toHaveCount(0);
   await expect(publicUrl).toContain("/shared/");
-  void owner;
+  await page.getByRole("button", { name: "Close collaborators" }).click();
+
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.getByRole("tab", { name: "Sign in" }).click();
+  await page.getByLabel("Email").fill(owner.email);
+  await page.getByLabel("Password").fill(owner.password);
+  await page.getByRole("button", { name: "Open scrapbook" }).click();
+  await expect(page.getByRole("heading", { name: "Shared table" })).toBeVisible();
+  await page.getByRole("button", { name: /Collaborators/ }).click();
+  await page.getByRole("button", { name: `Remove ${editorEmail}` }).click();
+  await expect(page.getByText(editorEmail)).toHaveCount(0);
+  await page.getByRole("button", { name: "Close collaborators" }).click();
+
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.getByRole("tab", { name: "Sign in" }).click();
+  await page.getByLabel("Email").fill(editorEmail);
+  await page.getByLabel("Password").fill("correct horse battery staple");
+  await page.getByRole("button", { name: "Open scrapbook" }).click();
+  await expect(page.getByRole("alert")).toHaveText("You do not have permission to access this scrapbook");
 });

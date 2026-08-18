@@ -60,6 +60,17 @@ export function ScrapbookWorkspace({ scrapbook, albums, media, editors, currentU
     try { await action(); await onRefresh(); setNotice({ message: success, tone: "success" }); } catch (error) { reportError(error); }
   }
 
+  async function moveMedia(mediaIds: string[], albumId: string | null) {
+    await bulkMoveMedia(scrapbook.id, mediaIds, albumId);
+    const movedIds = new Set(mediaIds);
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      for (const mediaId of movedIds) next.delete(mediaId);
+      return next;
+    });
+    setSelectionAnchorId((current) => current && movedIds.has(current) ? null : current);
+  }
+
   function selectMedia(id: string, checked: boolean, shiftKey = false) {
     setSelectedIds((current) => {
       const next = new Set(current);
@@ -107,19 +118,19 @@ export function ScrapbookWorkspace({ scrapbook, albums, media, editors, currentU
 
   function dropMedia(albumId: string | null, mediaId: string) {
     if (!media.some((item) => item.id === mediaId) || media.find((item) => item.id === mediaId)?.albumId === albumId) return;
-    void refreshAfter(() => bulkMoveMedia(scrapbook.id, [mediaId], albumId), "Memory moved");
+    void refreshAfter(() => moveMedia([mediaId], albumId), "Memory moved");
   }
 
   function openCreate() { setDraft(""); setModal({ kind: "create" }); }
   function openRename(album: Album) { setDraft(album.name); setModal({ kind: "rename", album }); }
-  function openMove(item: MediaItem) { setModal({ kind: "move", media: item }); }
+  function openMove(item: MediaItem) { setDraft(item.albumId ?? ""); setModal({ kind: "move", media: item }); }
 
   async function submitModal() {
     if (!modal) return;
     if (modal.kind === "create") await refreshAfter(async () => { await createAlbum(scrapbook.id, draft); setModal(null); }, "Album created");
     if (modal.kind === "rename") await refreshAfter(async () => { await renameAlbum(scrapbook.id, modal.album.id, draft); setModal(null); }, "Album renamed");
     if (modal.kind === "delete-album") await refreshAfter(async () => { await deleteAlbum(scrapbook.id, modal.album.id); if (activeAlbumId === modal.album.id) setActiveAlbumId(null); setModal(null); }, "Album deleted; memories kept");
-    if (modal.kind === "move") await refreshAfter(async () => { await bulkMoveMedia(scrapbook.id, [modal.media.id], draft || null); setModal(null); }, "Memory moved");
+    if (modal.kind === "move") await refreshAfter(async () => { await moveMedia([modal.media.id], draft || null); setModal(null); }, "Memory moved");
     if (modal.kind === "delete-media") await refreshAfter(async () => { await deleteMedia(scrapbook.id, modal.media.id); setSelectedIds((current) => { const next = new Set(current); next.delete(modal.media.id); return next; }); setSelectionAnchorId((current) => current === modal.media.id ? null : current); setDetailsMedia(null); setModal(null); }, "Memory deleted");
     if (modal.kind === "bulk-delete") await refreshAfter(async () => { await bulkDeleteMedia(scrapbook.id, [...selectedIds]); setSelectedIds(new Set()); setSelectionAnchorId(null); setModal(null); }, "Selected memories deleted");
   }
@@ -145,7 +156,7 @@ export function ScrapbookWorkspace({ scrapbook, albums, media, editors, currentU
       <section className="paper-spread" role="region" aria-label="Paper spread" onDragOver={(event) => event.preventDefault()}>
         <div className="spread-header"><div><p className="eyebrow">{activeAlbum ? `Spread ${String((albums.indexOf(activeAlbum) + 1)).padStart(2, "0")}` : "The whole story"}</p><h2>{activeAlbum?.name ?? "All memories"}</h2></div><div className="spread-meta"><span>{visibleMedia.length} {visibleMedia.length === 1 ? "memory" : "memories"}</span><Button className="button-primary" onClick={() => document.querySelector<HTMLInputElement>(".upload-dropzone input")?.click()}>Add memories</Button></div></div>
         <UploadDropzone scrapbookId={scrapbook.id} albumId={activeAlbumId} onUploaded={() => void onRefresh()} onError={(message) => setNotice({ message, tone: "error" })} />
-        <AllMemoriesToolbar selectedCount={selectedIds.size} albums={albums} onMove={(albumId) => void refreshAfter(async () => { await bulkMoveMedia(scrapbook.id, [...selectedIds], albumId); setSelectedIds(new Set()); setSelectionAnchorId(null); }, "Selected memories moved")} onDelete={() => setModal({ kind: "bulk-delete" })} onClear={() => { setSelectedIds(new Set()); setSelectionAnchorId(null); }} />
+        <AllMemoriesToolbar selectedCount={selectedIds.size} albums={albums} onMove={(albumId) => void refreshAfter(async () => { await moveMedia([...selectedIds], albumId); }, "Selected memories moved")} onDelete={() => setModal({ kind: "bulk-delete" })} onClear={() => { setSelectedIds(new Set()); setSelectionAnchorId(null); }} />
         <MediaGrid media={visibleMedia} selectedIds={selectedIds} onSelect={selectMedia} onOpenDetails={setDetailsMedia} onMove={openMove} onDelete={(item) => setModal({ kind: "delete-media", media: item })} onReorder={moveOrder} onDropReorder={dropOrder} />
         {activeAlbumId && <><StickerCanvasLayer editable placements={stickerPlacements} assets={stickerAssets} onChange={async (placement) => { const result = await updatePlacement(scrapbook.id, activeAlbumId, placement.id, placement); setStickerPlacements((current) => current.map((item) => item.id === result.placement.id ? result.placement : item)); }} onDelete={async (placement) => { await deletePlacement(scrapbook.id, activeAlbumId, placement.id); setStickerPlacements((current) => current.filter((item) => item.id !== placement.id)); }} /><StickerTray assets={stickerAssets} onUpload={async (file) => { await uploadSticker(scrapbook.id, file); await refreshStickers(); }} onDelete={async (asset) => { await deleteSticker(scrapbook.id, asset.id); setStickerAssets((current) => current.filter((item) => item.id !== asset.id)); setStickerPlacements((current) => current.filter((item) => item.stickerAssetId !== asset.id)); try { await refreshStickers(); } catch (error) { reportError(error); } }} onChoose={async (asset) => { const result = await createPlacement(scrapbook.id, activeAlbumId, { stickerAssetId: asset.id, x: 50, y: 50, scale: 1, rotation: 0, layer: stickerPlacements.length }); setStickerPlacements((current) => [...current, result.placement]); }} /></>}
       </section>

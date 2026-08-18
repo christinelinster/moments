@@ -15,6 +15,21 @@ test("public viewer opens without auth and playback is read-only", async ({ page
   await publicPage.goto(shareUrl);
   await expect(publicPage.getByRole("heading", { name: "Open to the sky" })).toBeVisible();
   await expect(publicPage.getByRole("button", { name: "Collaborators" })).toHaveCount(0);
+  const shareToken = new URL(shareUrl).pathname.split("/").pop()!;
+  const publicScrapbookId = await publicPage.evaluate(async (token) => {
+    const response = await fetch(`/api/public/${encodeURIComponent(token)}`);
+    const payload = await response.json() as { scrapbook: { id: string } };
+    return payload.scrapbook.id;
+  }, shareToken);
+  const mutationStatus = await publicPage.evaluate(async (scrapbookId) => {
+    const response = await fetch(`/api/albums/${encodeURIComponent(scrapbookId)}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "Should not be created" }),
+    });
+    return response.status;
+  }, publicScrapbookId);
+  expect(mutationStatus).toBe(401);
   await publicPage.emulateMedia({ reducedMotion: "reduce" });
   await publicPage.setViewportSize({ width: 390, height: 844 });
   await expect(publicPage.locator(".public-app")).toBeVisible();

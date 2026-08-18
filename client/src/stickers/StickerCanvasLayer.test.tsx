@@ -28,4 +28,21 @@ describe("StickerCanvasLayer", () => {
     expect(onChange).toHaveBeenCalledOnce();
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ id: "placement-1", x: 75, y: 75 }));
   });
+
+  it("supports keyboard nudges for an editable placement", () => {
+    const onChange = vi.fn();
+    render(<StickerCanvasLayer editable placements={[{ id: "placement-1", albumId: "album-1", stickerAssetId: "sticker-1", x: 25, y: 40, scale: 1, rotation: 0, layer: 1 }]} assets={[{ id: "sticker-1", originalName: "star.png", mimeType: "image/png", byteSize: 10, fileUrl: "/star.png" }]} onChange={onChange} onDelete={vi.fn()} />);
+    const placement = screen.getByRole("img", { name: "star.png" }).closest(".sticker-placement") as HTMLDivElement;
+
+    expect(placement).toHaveAttribute("tabindex", "0");
+    fireEvent.keyDown(placement, { key: "ArrowRight" });
+    fireEvent.keyDown(placement, { key: "ArrowLeft" });
+    fireEvent.keyDown(placement, { key: "ArrowUp" });
+    fireEvent.keyDown(placement, { key: "ArrowDown" });
+
+    expect(onChange).toHaveBeenNthCalledWith(1, expect.objectContaining({ id: "placement-1", x: 26, y: 40 }));
+    expect(onChange).toHaveBeenNthCalledWith(2, expect.objectContaining({ id: "placement-1", x: 24, y: 40 }));
+    expect(onChange).toHaveBeenNthCalledWith(3, expect.objectContaining({ id: "placement-1", x: 25, y: 39 }));
+    expect(onChange).toHaveBeenNthCalledWith(4, expect.objectContaining({ id: "placement-1", x: 25, y: 41 }));
+  });
 });

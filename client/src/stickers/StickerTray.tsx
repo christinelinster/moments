@@ -10,8 +10,8 @@ type StickerTrayProps = {
   onDelete: (asset: StickerAsset) => Promise<void>;
 };
 
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "That sticker could not be deleted. Try again.";
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
 }
 
 export function StickerTray({ assets, onUpload, onChoose, onDelete }: StickerTrayProps) {
@@ -20,14 +20,18 @@ export function StickerTray({ assets, onUpload, onChoose, onDelete }: StickerTra
   const [pendingDelete, setPendingDelete] = useState<StickerAsset | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   async function chooseFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
     setBusy(true);
+    setUploadError(null);
     try {
       await onUpload(file);
+    } catch (error) {
+      setUploadError(errorMessage(error, "That sticker could not be uploaded. Try again."));
     } finally {
       setBusy(false);
     }
@@ -46,7 +50,7 @@ export function StickerTray({ assets, onUpload, onChoose, onDelete }: StickerTra
       await onDelete(pendingDelete);
       setPendingDelete(null);
     } catch (error) {
-      setDeleteError(errorMessage(error));
+      setDeleteError(errorMessage(error, "That sticker could not be deleted. Try again."));
     } finally {
       setDeleteBusy(false);
     }
@@ -59,6 +63,7 @@ export function StickerTray({ assets, onUpload, onChoose, onDelete }: StickerTra
         <Button type="button" className="button-small" onClick={() => inputRef.current?.click()} disabled={busy} aria-label="Upload sticker">+</Button>
         <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => void chooseFile(event)} hidden />
       </div>
+      {uploadError && <p className="form-error" role="alert">{uploadError}</p>}
       {assets.length ? <div className="sticker-list">{assets.map((asset) => <div className="sticker-chip" key={asset.id}>
         <button type="button" className="sticker-place" onClick={() => onChoose(asset)} aria-label={`Place ${asset.originalName}`}>
           <img src={asset.fileUrl} alt={asset.originalName} />

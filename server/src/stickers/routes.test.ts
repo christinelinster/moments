@@ -5,13 +5,13 @@ import { errorHandler } from "../errors.js";
 import { createStickerRouter } from "./routes.js";
 import { normalizePlacement } from "./repository.js";
 
-function makeApp(db: unknown, storage: unknown, userId = "editor-1") {
+function makeApp(db: unknown, storage: unknown, userId = "editor-1", config?: { maxStickerBytes?: number }) {
   const app = express();
   app.use((request, _response, next) => {
     request.auth = { userId, user: { id: userId, email: `${userId}@example.com`, createdAt: new Date("2026-08-15T12:00:00.000Z") } };
     next();
   });
-  app.use("/api/stickers", createStickerRouter({ db: db as never, storage: storage as never }));
+  app.use("/api/stickers", createStickerRouter({ db: db as never, storage: storage as never, config }));
   app.use(errorHandler);
   return app;
 }
@@ -34,6 +34,32 @@ describe("sticker placements", () => {
 
   it("rejects non-finite transforms", () => {
     expect(() => normalizePlacement({ x: Number.NaN, y: 10, scale: 1, rotation: 0, layer: 0 })).toThrowError(/must be numbers/);
+  });
+
+  it("rejects unsupported sticker uploads before storage", async () => {
+    const db = { query: vi.fn().mockResolvedValueOnce({ rows: [{ role: "editor" }] }) };
+    const storage = { put: vi.fn(), delete: vi.fn() };
+
+    const response = await request(makeApp(db, storage)).post("/api/stickers/scrapbook-1").attach("file", Buffer.from("%PDF-1.7"), { filename: "notes.pdf", contentType: "application/pdf" });
+
+    expect(response.status).toBe(415);
+    expect(response.body.error).toBe("UNSUPPORTED_MEDIA_TYPE");
+    expect(storage.put).not.toHaveBeenCalled();
+    expect(db.query).toHaveBeenCalledOnce();
+  });
+
+  it("rejects oversized sticker uploads before storage", async () => {
+    const db = { query: vi.fn().mockResolvedValueOnce({ rows: [{ role: "editor" }] }) };
+    const storage = { put: vi.fn(), delete: vi.fn() };
+
+    const response = await request(makeApp(db, storage, "editor-1", { maxStickerBytes: 4 }))
+      .post("/api/stickers/scrapbook-1")
+      .attach("file", Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0x01]), { filename: "large.png", contentType: "image/png" });
+
+    expect(response.status).toBe(413);
+    expect(response.body.error).toBe("UPLOAD_TOO_LARGE");
+    expect(storage.put).not.toHaveBeenCalled();
+    expect(db.query).toHaveBeenCalledOnce();
   });
 
   it("deletes an asset only after its stored file is removed", async () => {

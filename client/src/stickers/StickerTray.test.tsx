@@ -36,4 +36,16 @@ describe("StickerTray", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Storage is unavailable");
     expect(screen.getByRole("dialog", { name: /delete sticker/i })).toBeInTheDocument();
   });
+
+  it("surfaces rejected sticker uploads instead of leaving an unhandled error", async () => {
+    const user = userEvent.setup();
+    const onUpload = vi.fn().mockRejectedValue(new Error("Sticker files must be PNG, JPEG, or WebP."));
+    const { container } = render(<StickerTray assets={[]} onUpload={onUpload} onChoose={vi.fn()} onDelete={vi.fn()} />);
+    const input = container.querySelector('input[type="file"]');
+
+    await user.upload(input as HTMLInputElement, new File(["not an image"], "note.png", { type: "image/png" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Sticker files must be PNG, JPEG, or WebP.");
+    expect(screen.getByRole("button", { name: /upload sticker/i })).not.toBeDisabled();
+  });
 });
