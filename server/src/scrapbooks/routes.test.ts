@@ -39,6 +39,21 @@ const scrapbookRow = {
 };
 
 describe("scrapbook routes", () => {
+  it("lists the signed-in user's scrapbooks for workspace entry", async () => {
+    const db = {
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [{ id: "scrapbook-1", owner_id: "owner-1", title: "Summer memories", theme_key: "field-journal", share_enabled: true, created_at: scrapbookRow.created_at, updated_at: scrapbookRow.updated_at }] }),
+    };
+
+    const response = await request(makeApp(db, "owner-1")).get("/api/scrapbooks");
+
+    expect(response.status).toBe(200);
+    expect(response.body.scrapbooks).toEqual([
+      expect.objectContaining({ id: "scrapbook-1", title: "Summer memories", ownerId: "owner-1" }),
+    ]);
+  });
+
   it("creates a scrapbook with the default theme without exposing its raw share token", async () => {
     const db = {
       query: vi.fn().mockResolvedValue({ rows: [scrapbookRow] }),
@@ -93,6 +108,29 @@ describe("scrapbook routes", () => {
         userId: "editor-user-1",
       }),
     ]);
+  });
+
+  it("serves a public-shaped preview to an authorized editor without a share token", async () => {
+    const db = {
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({ rows: [{ role: "editor" }] })
+        .mockResolvedValueOnce({ rows: [scrapbookRow] })
+        .mockResolvedValue({ rows: [] }),
+    };
+
+    const response = await request(makeApp(db, "editor-1"))
+      .get("/api/scrapbooks/scrapbook-1/preview");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      scrapbook: { id: "scrapbook-1", title: "Summer memories" },
+      albums: [],
+      media: [],
+      stickerAssets: [],
+      stickerPlacements: [],
+    });
+    expect(JSON.stringify(response.body)).not.toContain("raw-owner-token");
   });
 
   it("allows an editor to change scrapbook state and add another editor", async () => {

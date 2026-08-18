@@ -1,0 +1,64 @@
+:root {
+  color-scheme: light;
+  --ink: #15283b;
+  --ink-soft: #385065;
+  --desk: #102334;
+  --paper: #f7f0df;
+  --paper-deep: #e9dfc9;
+  --paper-light: #fffaf0;
+  --pool: #78b9c2;
+  --pool-deep: #327d88;
+  --marigold: #e8b34d;
+  --persimmon: #d66c52;
+  --lavender: #aa99bf;
+  --line: rgba(21, 40, 59, .17);
+  --shadow: 0 20px 50px rgba(8, 22, 35, .25);
+  --radius: 14px;
+  --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --serif: Baskerville, "Iowan Old Style", Georgia, serif;
+}
+
+.scrapbook-app.theme-poolside, .public-app.theme-poolside {
+  --ink: #24505d;
+  --ink-soft: #416f76;
+  --desk: #163946;
+  --paper: #d7f0ec;
+  --paper-deep: #bddbd6;
+  --paper-light: #f5fffc;
+  --pool: #82c9ca;
+  --pool-deep: #2f7d82;
+  --marigold: #f1c45e;
+  --persimmon: #e38c73;
+  --lavender: #9caad0;
+  --line: rgba(36, 80, 93, .2);
+}
+
+.scrapbook-app.theme-citrus-notebook, .public-app.theme-citrus-notebook {
+  --ink: #3d5b3b;
+  --ink-soft: #5b704e;
+  --desk: #243b2c;
+  --paper: #fff0a9;
+  --paper-deep: #ebd984;
+  --paper-light: #fff9d6;
+  --pool: #9bb77f;
+  --pool-deep: #587949;
+  --marigold: #e6a34c;
+  --persimmon: #c86a4d;
+  --lavender: #a7a57d;
+  --line: rgba(61, 91, 59, .2);
+}
+
+.scrapbook-app.theme-moonlight-ink, .public-app.theme-moonlight-ink {
+  --ink: #182039;
+  --ink-soft: #454b6d;
+  --desk: #0d1327;
+  --paper: #d6d3e3;
+  --paper-deep: #bcbacf;
+  --paper-light: #f1eff8;
+  --pool: #9a9fc8;
+  --pool-deep: #5e648e;
+  --marigold: #d8bf77;
+  --persimmon: #c78bb2;
+  --lavender: #a4a6db;
+  --line: rgba(24, 32, 57, .2);
+}

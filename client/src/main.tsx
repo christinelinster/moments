@@ -1,12 +1,14 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-
-function FoundationScreen() {
-  return <main>Photo scrapbook</main>;
-}
+import { App } from "./app";
+import "./styles/tokens.css";
+import "./styles/global.css";
+import "./styles/scrapbook.css";
+import "./styles/public.css";
+import "./styles/playback.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <FoundationScreen />
+    <App />
   </StrictMode>,
 );

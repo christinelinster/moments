@@ -128,6 +128,35 @@ describe("media routes", () => {
     expect(storage.delete).toHaveBeenCalledWith("media-orphan.jpg");
   });
 
+  it("notifies the client when the same media content already exists", async () => {
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({ rows: [{ role: "editor" }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValue({ rows: [] });
+    const db = { query };
+    const storage = {
+      put: vi.fn().mockResolvedValue({ key: "media-duplicate.jpg", byteSize: 6 }),
+      get: vi.fn(),
+      delete: vi.fn().mockResolvedValue(undefined),
+    };
+
+    const response = await request(makeApp(db, storage, "editor-1"))
+      .post("/api/media/scrapbook-1")
+      .attach(
+        "file",
+        Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]),
+        { filename: "memory.jpg", contentType: "image/jpeg" },
+      );
+
+    expect(response.status).toBe(409);
+    expect(response.body).toMatchObject({
+      error: "DUPLICATE_MEDIA",
+      message: expect.stringContaining("already exists"),
+    });
+    expect(storage.delete).toHaveBeenCalledWith("media-duplicate.jpg");
+  });
+
   it("rejects an album that is not in the target scrapbook before storage", async () => {
     const db = {
       query: vi

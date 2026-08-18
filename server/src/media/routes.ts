@@ -29,11 +29,27 @@ import {
   updateMedia,
 } from "./repository.js";
 import { albumExistsInScrapbook } from "../albums/repository.js";
+import { findStickerFileAccess } from "../stickers/repository.js";
 import {
   DEFAULT_MAX_MEDIA_BYTES,
   validateUploadedFile,
   type UploadedFile,
 } from "./validation.js";
+
+function mediaResponse(media: Awaited<ReturnType<typeof listMedia>>[number]) {
+  const {
+    storageKey: _storageKey,
+    createdBy: _createdBy,
+    updatedAt: _updatedAt,
+    contentHash: _contentHash,
+    ...publicMedia
+  } = media;
+  return {
+    ...publicMedia,
+    fileUrl: `/api/files/by-media/${encodeURIComponent(media.id)}`,
+    createdAt: media.createdAt.toISOString(),
+  };
+}
 
 export type MediaRouteConfig = {
   maxMediaBytes?: number;
@@ -316,7 +332,7 @@ export function createMediaRouter({
           throw new AppError(400, "albumId must be a string", "INVALID_INPUT");
         }
         response.json({
-          media: await listMedia(db, routeParam(request, "scrapbookId"), albumId ?? null),
+          media: (await listMedia(db, routeParam(request, "scrapbookId"), albumId ?? null)).map(mediaResponse),
         });
       } catch (error) {
         next(error);
@@ -364,11 +380,12 @@ export function createMediaRouter({
             mediaType,
             mimeType: upload.mimeType,
             byteSize: stored.byteSize,
+            contentHash: upload.contentHash,
             caption,
             location,
             createdBy: request.auth!.userId,
           });
-          response.status(201).json({ media });
+          response.status(201).json({ media: mediaResponse(media) });
         } catch (error) {
           await cleanupFailedUpload(db, storage, scrapbookId, stored.key);
           throw error;
@@ -409,7 +426,7 @@ export function createMediaRouter({
           next(notFound("Media item"));
           return;
         }
-        response.json({ media });
+        response.json({ media: mediaResponse(media) });
       } catch (error) {
         next(error);
       }
@@ -549,6 +566,17 @@ export function createFileRouter({
   router.get("/by-media/:mediaId", (request, response, next) =>
     serveFile(request, response, next, () =>
       findFileAccessByMediaId(db, routeParam(request, "mediaId"), {
+        userId: request.auth?.userId,
+        shareToken: typeof request.query.shareToken === "string"
+          ? request.query.shareToken
+          : undefined,
+      }),
+    ),
+  );
+
+  router.get("/by-sticker/:assetId", (request, response, next) =>
+    serveFile(request, response, next, () =>
+      findStickerFileAccess(db, routeParam(request, "assetId"), {
         userId: request.auth?.userId,
         shareToken: typeof request.query.shareToken === "string"
           ? request.query.shareToken

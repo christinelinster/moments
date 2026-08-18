@@ -9,9 +9,11 @@
     "dev": "concurrently -k \"npm run dev --workspace server\" \"npm run dev --workspace client\"",
     "test": "npm run test --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
-    "db:migrate": "npm run db:migrate --workspace server"
+    "db:migrate": "npm run db:migrate --workspace server",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "concurrently": "^9.1.2"
   }
 }

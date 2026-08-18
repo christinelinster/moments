@@ -1,0 +1,11 @@
+import { apiFetch } from "../api/http";
+import type { StickerAsset, StickerPlacement } from "../api/types";
+
+export function listStickers(scrapbookId: string): Promise<{ assets: StickerAsset[] }> { return apiFetch(`/api/stickers/${encodeURIComponent(scrapbookId)}`); }
+export function uploadSticker(scrapbookId: string, file: File): Promise<{ asset: StickerAsset }> { const form = new FormData(); form.append("file", file); return apiFetch(`/api/stickers/${encodeURIComponent(scrapbookId)}`, { method: "POST", body: form }); }
+export function deleteSticker(scrapbookId: string, assetId: string): Promise<void> { return apiFetch(`/api/stickers/${encodeURIComponent(scrapbookId)}/${encodeURIComponent(assetId)}`, { method: "DELETE" }); }
+export function listPlacements(scrapbookId: string, albumId: string): Promise<{ placements: StickerPlacement[] }> { return apiFetch(`/api/stickers/${encodeURIComponent(scrapbookId)}/placements/${encodeURIComponent(albumId)}`); }
+export function createPlacement(scrapbookId: string, albumId: string, placement: Omit<StickerPlacement, "id" | "albumId">): Promise<{ placement: StickerPlacement }> { return apiFetch(`/api/stickers/${encodeURIComponent(scrapbookId)}/placements/${encodeURIComponent(albumId)}`, { method: "POST", body: JSON.stringify(placement) }); }
+export function updatePlacement(scrapbookId: string, albumId: string, placementId: string, updates: Partial<StickerPlacement>): Promise<{ placement: StickerPlacement }> { return apiFetch(`/api/stickers/${encodeURIComponent(scrapbookId)}/placements/${encodeURIComponent(albumId)}/${encodeURIComponent(placementId)}`, { method: "PATCH", body: JSON.stringify(updates) }); }
+export function deletePlacement(scrapbookId: string, albumId: string, placementId: string): Promise<void> { return apiFetch(`/api/stickers/${encodeURIComponent(scrapbookId)}/placements/${encodeURIComponent(albumId)}/${encodeURIComponent(placementId)}`, { method: "DELETE" }); }
+export function reorderPlacements(scrapbookId: string, albumId: string, orderedIds: string[]): Promise<void> { return apiFetch(`/api/stickers/${encodeURIComponent(scrapbookId)}/placements/${encodeURIComponent(albumId)}/reorder`, { method: "POST", body: JSON.stringify({ orderedIds }) }); }

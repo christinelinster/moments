@@ -109,8 +109,9 @@ describe("public scrapbook routes", () => {
         {
           id: "sticker-1",
           originalName: "star.png",
-          mimeType: "image/png",
-          byteSize: 50,
+        mimeType: "image/png",
+        byteSize: 50,
+        fileUrl: "/api/files/by-sticker/sticker-1?shareToken=active-token",
         },
       ],
       stickerPlacements: [
